@@ -8,6 +8,9 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
 
+  <!-- Camera-based barcode scanning library (works without the native BarcodeDetector API). -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
   <style>
 
     * {
@@ -1349,7 +1352,10 @@
       margin-top: 16px; padding: 12px; background: #0f172a; border-radius: 14px;
       overflow: hidden; text-align: center;
     }
-    .barcodeCameraWrap video { width: 100%; max-height: 420px; object-fit: contain; background: #000; border-radius: 9px; }
+    .barcodeCameraWrap video { width: 100% !important; max-height: 420px !important; object-fit: contain; background: #000; border-radius: 9px; }
+    #barcodeScanner { width: 100%; max-width: 620px; margin: 0 auto; }
+    #barcodeScanner__scan_region { min-height: 220px; }
+    #barcodeScanner__dashboard { color: #fff; }
     .barcodeCameraHint { color: #e2e8f0; font-size: 13px; padding: 10px 4px 2px; }
     .barcodeSaveActions { margin-top: 20px; }
     body.darkMode .barcodeSelectedItem { background: #083344; color: #cffafe; border-left-color: #22d3ee; }
@@ -1963,8 +1969,8 @@
       </div>
 
       <div id="barcodeCameraWrap" class="barcodeCameraWrap" style="display:none;">
-        <video id="barcodeVideo" autoplay muted playsinline></video>
-        <div class="barcodeCameraHint">Point the camera at the item's barcode. Keep the barcode inside the camera view.</div>
+        <div id="barcodeScanner"></div>
+        <div class="barcodeCameraHint">Point the rear camera at the item's barcode. Keep the barcode inside the scanning frame.</div>
       </div>
 
       <div id="barcodeMessage" class="message"></div>
@@ -3841,10 +3847,8 @@
   /* =====================================================
      ITEM BARCODE REGISTRATION
      ===================================================== */
-  var barcodeCameraStream = null;
-  var barcodeDetector = null;
+  var barcodeScanner = null;
   var barcodeScanActive = false;
-  var barcodeScanFrame = null;
   var selectedBarcodeItem = null;
 
   function showBarcodeRegistration() {
@@ -3906,90 +3910,90 @@
   }
 
   function toggleBarcodeCamera() {
-    if (barcodeCameraStream) {
+    if (barcodeScanActive) {
       stopBarcodeCamera();
       return;
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showBarcodeMessage('Camera access is not available. Open this page using HTTPS in a supported browser, or enter the barcode manually.', false);
-      return;
-    }
-    if (!('BarcodeDetector' in window)) {
-      showBarcodeMessage('Automatic barcode scanning is not supported by this browser. You can still enter the barcode manually in the Barcode field.', false);
+      showBarcodeMessage('Camera access requires HTTPS and a browser that supports camera permissions. Open this page through your secure GitHub Pages address and allow camera access.', false);
       return;
     }
 
-    var formats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf', 'qr_code', 'codabar', 'data_matrix'];
-    var detectorPromise = window.BarcodeDetector.getSupportedFormats
-      ? window.BarcodeDetector.getSupportedFormats().then(function(supported) {
-          return new BarcodeDetector({formats: formats.filter(function(format) {
-            return supported.indexOf(format) !== -1;
-          })});
-        })
-      : Promise.resolve(new BarcodeDetector());
+    if (typeof Html5Qrcode === 'undefined') {
+      showBarcodeMessage('The camera scanner could not load. Please check your internet connection, refresh the page, and try again.', false);
+      return;
+    }
 
-    detectorPromise.then(function(detector) {
-      barcodeDetector = detector;
-      return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false
-      });
-    }).then(function(stream) {
-      barcodeCameraStream = stream;
-      var video = document.getElementById('barcodeVideo');
-      video.srcObject = stream;
-      document.getElementById('barcodeCameraWrap').style.display = 'block';
-      document.getElementById('barcodeCameraButton').textContent = '📷 CAMERA ACTIVE';
-      barcodeScanActive = true;
-      return video.play();
-    }).then(function() {
-      scanBarcodeFrame();
-    }).catch(function(error) {
-      stopBarcodeCamera();
-      showBarcodeMessage('Unable to open the camera: ' + (error && error.message ? error.message : error) +
-        '. Check camera permission or enter the barcode manually.', false);
-    });
-  }
+    var wrap = document.getElementById('barcodeCameraWrap');
+    var button = document.getElementById('barcodeCameraButton');
+    wrap.style.display = 'block';
+    button.textContent = '📷 STARTING CAMERA...';
+    barcodeScanActive = true;
 
-  function scanBarcodeFrame() {
-    if (!barcodeScanActive || !barcodeDetector) return;
-    var video = document.getElementById('barcodeVideo');
-    if (video && video.readyState >= 2) {
-      barcodeDetector.detect(video).then(function(codes) {
-        if (!barcodeScanActive || !codes || !codes.length) return;
-        var rawValue = String(codes[0].rawValue || '').trim();
-        if (rawValue) {
+    try {
+      barcodeScanner = new Html5Qrcode('barcodeScanner');
+      barcodeScanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 280, height: 140 },
+          aspectRatio: 1.7777778,
+          rememberLastUsedCamera: true
+        },
+        function(decodedText) {
+          if (!barcodeScanActive) return;
+          var rawValue = String(decodedText || '').trim();
+          if (!rawValue) return;
           document.getElementById('barcodeValue').value = rawValue;
-          showBarcodeMessage('Barcode detected. Review it, then click SAVE BARCODE.', true);
+          showBarcodeMessage('Barcode detected: ' + rawValue + '. Review it, then click SAVE BARCODE.', true);
           stopBarcodeCamera();
-          return;
+        },
+        function() {
+          // No barcode in this frame; continue scanning.
         }
+      ).then(function() {
+        if (barcodeScanActive) button.textContent = '📷 CAMERA ACTIVE';
       }).catch(function(error) {
-        console.warn('Barcode scan error:', error);
-      }).finally(function() {
-        if (barcodeScanActive) barcodeScanFrame = window.requestAnimationFrame(scanBarcodeFrame);
+        barcodeScanActive = false;
+        if (barcodeScanner) {
+          try { barcodeScanner.clear(); } catch (clearError) { console.warn(clearError); }
+          barcodeScanner = null;
+        }
+        wrap.style.display = 'none';
+        button.textContent = '📷 OPEN CAMERA';
+        showBarcodeMessage('Unable to start the camera: ' + (error && error.message ? error.message : error) + '. Allow camera permission and make sure no other app is using the camera.', false);
       });
-    } else {
-      barcodeScanFrame = window.requestAnimationFrame(scanBarcodeFrame);
+    } catch (error) {
+      barcodeScanActive = false;
+      wrap.style.display = 'none';
+      button.textContent = '📷 OPEN CAMERA';
+      showBarcodeMessage('Unable to initialize the camera scanner: ' + (error && error.message ? error.message : error), false);
     }
   }
 
   function stopBarcodeCamera() {
     barcodeScanActive = false;
-    if (barcodeScanFrame) {
-      window.cancelAnimationFrame(barcodeScanFrame);
-      barcodeScanFrame = null;
-    }
-    if (barcodeCameraStream) {
-      barcodeCameraStream.getTracks().forEach(function(track) { track.stop(); });
-      barcodeCameraStream = null;
-    }
-    var video = document.getElementById('barcodeVideo');
-    if (video) video.srcObject = null;
     var wrap = document.getElementById('barcodeCameraWrap');
-    if (wrap) wrap.style.display = 'none';
     var button = document.getElementById('barcodeCameraButton');
+
+    if (barcodeScanner) {
+      var scannerToStop = barcodeScanner;
+      barcodeScanner = null;
+      var stopPromise;
+      try {
+        stopPromise = scannerToStop.isScanning ? scannerToStop.stop() : Promise.resolve();
+      } catch (error) {
+        stopPromise = Promise.resolve();
+      }
+      Promise.resolve(stopPromise).catch(function(error) {
+        console.warn('Unable to stop barcode scanner cleanly:', error);
+      }).then(function() {
+        try { scannerToStop.clear(); } catch (error) { console.warn(error); }
+      });
+    }
+
+    if (wrap) wrap.style.display = 'none';
     if (button) button.textContent = '📷 OPEN CAMERA';
   }
 
