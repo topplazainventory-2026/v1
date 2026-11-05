@@ -1,17 +1,3767 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0;url=https://script.google.com/macros/s/AKfycbzyTrEfCDZtbqaT-Sjs8hrTmC1HORSQKl-p83kycGdJ-CzVbyMqvVGInia4ynZS0RGK/exec">
-  <title>Top Plaza Stock Management System</title>
-  <script>
-    // Replace the placeholder below with your deployed Apps Script Web App URL.
-    window.location.replace('https://script.google.com/macros/s/AKfycbzyTrEfCDZtbqaT-Sjs8hrTmC1HORSQKl-p83kycGdJ-CzVbyMqvVGInia4ynZS0RGK/exec');
-  </script>
+
+  <base target="_self">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+      transition: background .3s ease, color .3s ease;
+    }
+
+    /* =====================================================
+       LIGHT / DARK MODE TOGGLE
+       ===================================================== */
+
+    .themeToggle {
+      position: fixed;
+      top: 18px;
+      right: 20px;
+      z-index: 9999;
+      border: none;
+      border-radius: 30px;
+      padding: 11px 17px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #1f2937;
+      color: white;
+      box-shadow: 0 5px 15px rgba(0,0,0,.18);
+      transition: all .3s ease;
+    }
+
+    .themeToggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+    }
+
+    /* =====================================================
+       DARK MODE
+       ===================================================== */
+
+    body.darkMode {
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    body.darkMode .homeCard {
+      background: rgba(15,23,42,.96);
+      color: #e5e7eb;
+      box-shadow: 0 12px 35px rgba(0,0,0,.45);
+    }
+
+    body.darkMode .homeCard h1 {
+      color: #93c5fd;
+    }
+
+    body.darkMode .homeCard p {
+      color: #cbd5e1;
+    }
+
+    body.darkMode .card {
+      background: #1e293b;
+      color: #e5e7eb;
+      box-shadow: 0 7px 20px rgba(0,0,0,.35);
+    }
+
+    body.darkMode .card h2,
+    body.darkMode .reportTitle {
+      color: #93c5fd;
+    }
+
+    body.darkMode label {
+      color: #e5e7eb;
+    }
+
+    body.darkMode input,
+    body.darkMode select {
+      background: #0f172a;
+      color: #f8fafc;
+      border-color: #475569;
+    }
+
+    body.darkMode input::placeholder {
+      color: #94a3b8;
+    }
+
+    body.darkMode input:focus {
+      border-color: #60a5fa;
+    }
+
+    body.darkMode .matched {
+      background: #172554;
+      border-left-color: #60a5fa;
+      color: #dbeafe;
+    }
+
+    body.darkMode .stockLeft {
+      background: #052e16;
+      border-left-color: #22c55e;
+      color: #dcfce7;
+    }
+
+    body.darkMode .summaryBox {
+      background: #0f172a;
+      color: #e5e7eb;
+      box-shadow: 0 5px 15px rgba(0,0,0,.3);
+    }
+
+    body.darkMode .summaryBox strong {
+      color: #60a5fa;
+    }
+
+    body.darkMode .statusTableWrapper {
+      background: #1e293b;
+    }
+
+    body.darkMode td {
+      border-bottom-color: #334155;
+      color: #e5e7eb;
+    }
+
+    body.darkMode tr:hover {
+      background: #334155;
+    }
+
+    body.darkMode .badgeNo {
+      background: #450a0a;
+      color: #fca5a5;
+    }
+
+    body.darkMode .badgeLow {
+      background: #431407;
+      color: #fdba74;
+    }
+
+    body.darkMode .badgeOn {
+      background: #052e16;
+      color: #86efac;
+    }
+
+    body.darkMode .reportGroupedTable {
+      background: #1e293b;
+    }
+
+    body.darkMode .reportGroupedTable th {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    body.darkMode .reportGroupedTable .dateHeader {
+      background: #0f172a;
+    }
+
+    body.darkMode .reportGroupedTable .inHeader,
+    body.darkMode .reportGroupedTable .outHeader {
+      background: #1e293b;
+    }
+
+    body.darkMode .reportGroupedTable td {
+      border-color: #475569;
+    }
+
+    body.darkMode .reportGroupedTable .reportTotalRow {
+      background: #334155;
+    }
+
+    body.darkMode .reportGroupedTable .reportTotalRow td {
+      border-top-color: #64748b;
+    }
+
+    body.darkMode .message.success {
+      background: #052e16;
+      color: #86efac;
+    }
+
+    body.darkMode .message.error {
+      background: #450a0a;
+      color: #fca5a5;
+    }
+
+    body.darkMode .animatedBackground {
+      background:
+        radial-gradient(
+          circle at 50% 50%,
+          rgba(59,130,246,.12),
+          transparent 60%
+        );
+    }
+
+    body.darkMode .themeToggle {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    body.darkMode .themeToggle:hover {
+      background: #e2e8f0;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1200px;
+      margin: 30px auto;
+    }
+
+    /* =====================================================
+       MAIN HOME PAGE
+       ===================================================== */
+
+    .mainHome {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .homeCard {
+      width: 100%;
+      max-width: 850px;
+      background: rgba(255,255,255,.96);
+      border-radius: 25px;
+      padding: 45px;
+      text-align: center;
+      box-shadow: 0 12px 35px rgba(0,0,0,.12);
+      position: relative;
+      z-index: 10;
+    }
+
+    .homeIcon {
+      font-size: 65px;
+      margin-bottom: 15px;
+    }
+
+    /* =====================================================
+       ANIMATED BACKGROUND SHAPES
+       HOME PAGE ONLY
+       ===================================================== */
+
+    .animatedBackground {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+      border-radius: 20px;
+      background:
+        radial-gradient(
+          circle at 50% 50%,
+          rgba(37,99,235,.08),
+          transparent 60%
+        );
+    }
+
+    .floatingShape {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .shapeCircle {
+      width: 170px;
+      height: 170px;
+      border: 4px solid rgba(37,99,235,.18);
+      border-radius: 50%;
+      top: 5%;
+      left: 5%;
+      animation: circleMove 14s ease-in-out infinite;
+    }
+
+    .shapeSquare {
+      width: 130px;
+      height: 130px;
+      border: 4px solid rgba(124,58,237,.15);
+      border-radius: 25px;
+      right: 7%;
+      top: 8%;
+      animation: squareMove 17s ease-in-out infinite;
+    }
+
+    .shapeTriangle {
+      width: 0;
+      height: 0;
+      border-left: 65px solid transparent;
+      border-right: 65px solid transparent;
+      border-bottom: 115px solid rgba(22,163,74,.13);
+      left: 10%;
+      bottom: 5%;
+      animation: triangleMove 16s ease-in-out infinite;
+    }
+
+    .shapeDiamond {
+      width: 105px;
+      height: 105px;
+      border: 4px solid rgba(245,158,11,.18);
+      border-radius: 18px;
+      right: 12%;
+      bottom: 7%;
+      transform: rotate(45deg);
+      animation: diamondMove 15s ease-in-out infinite;
+    }
+
+    .smallShape {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: rgba(37,99,235,.18);
+    }
+
+    .smallShape.one {
+      top: 18%;
+      left: 27%;
+      animation: smallOne 9s ease-in-out infinite;
+    }
+
+    .smallShape.two {
+      top: 65%;
+      left: 20%;
+      width: 18px;
+      height: 18px;
+      background: rgba(22,163,74,.20);
+      animation: smallTwo 11s ease-in-out infinite;
+    }
+
+    .smallShape.three {
+      top: 25%;
+      right: 25%;
+      width: 20px;
+      height: 20px;
+      background: rgba(124,58,237,.20);
+      animation: smallThree 10s ease-in-out infinite;
+    }
+
+    .smallShape.four {
+      bottom: 20%;
+      right: 28%;
+      width: 30px;
+      height: 30px;
+      background: rgba(245,158,11,.20);
+      animation: smallFour 12s ease-in-out infinite;
+    }
+
+    .smallShape.five {
+      top: 48%;
+      left: 5%;
+      width: 16px;
+      height: 16px;
+      background: rgba(220,38,38,.18);
+      animation: smallFive 8s ease-in-out infinite;
+    }
+
+    .animationRing {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border: 2px solid rgba(37,99,235,.08);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: ringPulse 8s ease-in-out infinite;
+    }
+
+    .animationRingTwo {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border: 2px solid rgba(124,58,237,.06);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: ringPulseTwo 11s ease-in-out infinite;
+    }
+
+    /* =====================================================
+       ANIMATIONS
+       ===================================================== */
+
+    @keyframes circleMove {
+
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      25% {
+        transform: translate(90px, 35px) rotate(45deg);
+      }
+
+      50% {
+        transform: translate(150px, 100px) rotate(90deg);
+      }
+
+      75% {
+        transform: translate(50px, 150px) rotate(135deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(180deg);
+      }
+
+    }
+
+    @keyframes squareMove {
+
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      25% {
+        transform: translate(-80px, 60px) rotate(45deg);
+      }
+
+      50% {
+        transform: translate(-150px, 130px) rotate(90deg);
+      }
+
+      75% {
+        transform: translate(-50px, 80px) rotate(135deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(180deg);
+      }
+
+    }
+
+    @keyframes triangleMove {
+
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      25% {
+        transform: translate(100px, -40px) rotate(60deg);
+      }
+
+      50% {
+        transform: translate(170px, -100px) rotate(120deg);
+      }
+
+      75% {
+        transform: translate(60px, -50px) rotate(180deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(360deg);
+      }
+
+    }
+
+    @keyframes diamondMove {
+
+      0% {
+        transform: rotate(45deg) translate(0, 0);
+      }
+
+      25% {
+        transform: rotate(100deg) translate(-60px, -50px);
+      }
+
+      50% {
+        transform: rotate(160deg) translate(-120px, -100px);
+      }
+
+      75% {
+        transform: rotate(250deg) translate(-50px, -40px);
+      }
+
+      100% {
+        transform: rotate(405deg) translate(0, 0);
+      }
+
+    }
+
+    @keyframes smallOne {
+
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(100px, 90px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+
+    }
+
+    @keyframes smallTwo {
+
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(-80px, -100px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+
+    }
+
+    @keyframes smallThree {
+
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(90px, 110px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+
+    }
+
+    @keyframes smallFour {
+
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(-100px, -80px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+
+    }
+
+    @keyframes smallFive {
+
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(70px, 120px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+
+    }
+
+    @keyframes ringPulse {
+
+      0% {
+        transform: translate(-50%, -50%) scale(.85);
+        opacity: .3;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        opacity: .8;
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(.85);
+        opacity: .3;
+      }
+
+    }
+
+    @keyframes ringPulseTwo {
+
+      0% {
+        transform: translate(-50%, -50%) scale(.9);
+        opacity: .2;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.08);
+        opacity: .6;
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(.9);
+        opacity: .2;
+      }
+
+    }
+
+    /* =====================================================
+       DASHBOARD IMAGE / LOGO
+       IMAGE FROM LOGO SHEET A1
+       ===================================================== */
+
+    .dashboardImage {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 15px;
+      position: relative;
+      z-index: 11;
+    }
+
+    .homeCard h1 {
+      margin: 0;
+      font-size: 34px;
+      color: #1e3a8a;
+    }
+
+    .homeCard p {
+      color: #6b7280;
+      font-size: 17px;
+      margin: 10px 0 35px;
+    }
+
+    .homeButtons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      position: relative;
+      z-index: 11;
+    }
+
+    .homeButton {
+      border: none;
+      min-height: 180px;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      z-index: 11;
+    }
+
+    .homeButton:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 28px rgba(0,0,0,.18);
+    }
+
+    .entryHomeButton {
+      background: linear-gradient(135deg, #16a34a, #047857);
+    }
+
+    .reportHomeButton {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+
+    .homeButton .bigIcon {
+      display: block;
+      font-size: 50px;
+      margin-bottom: 12px;
+    }
+
+    .homeButton .buttonTitle {
+      display: block;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .homeButton .buttonText {
+      display: block;
+      font-size: 14px;
+      opacity: .9;
+      margin-top: 8px;
+    }
+
+    /* =====================================================
+       HEADER
+       ===================================================== */
+
+    .header {
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      color: white;
+      padding: 25px;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,.12);
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 8px 0 0;
+      opacity: .9;
+    }
+
+    /* =====================================================
+       TOP NAVIGATION
+       ===================================================== */
+
+    .topNavigation {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .navButton {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      background: #475569;
+    }
+
+    .navButton:hover {
+      opacity: .9;
+    }
+
+    /* =====================================================
+       PAGE CONTROL
+       ===================================================== */
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* =====================================================
+       CARDS
+       ===================================================== */
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 25px;
+      box-shadow: 0 7px 20px rgba(0,0,0,.08);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #1d4ed8;
+    }
+
+    /* =====================================================
+       FORM
+       ===================================================== */
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+    }
+
+    .matched {
+      margin-top: 10px;
+      padding: 12px;
+      background: #eff6ff;
+      border-left: 5px solid #2563eb;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .stockLeft {
+      margin-top: 10px;
+      padding: 12px;
+      background: #f0fdf4;
+      border-left: 5px solid #16a34a;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btnIn {
+      background: #16a34a;
+    }
+
+    .btnOut {
+      background: #dc2626;
+    }
+
+    .btnGenerate {
+      width: 100%;
+      margin-top: 18px;
+      background: #2563eb;
+    }
+
+    .btnBack {
+      background: #6b7280;
+      margin-bottom: 15px;
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* =====================================================
+       STOCK MONITORING
+       ===================================================== */
+
+    .monitorHeader {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .monitorHeader h2 {
+      color: white;
+      margin: 0 0 5px;
+    }
+
+    .monitorHeader p {
+      margin: 0;
+      opacity: .9;
+    }
+
+    .stockCards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 18px;
+    }
+
+    .stockCard {
+      color: white;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.12);
+    }
+
+    .noStockCard {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+    }
+
+    .lowStockCard {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+    }
+
+    .onStockCard {
+      background: linear-gradient(135deg, #22c55e, #15803d);
+    }
+
+    .stockCard .icon {
+      font-size: 30px;
+    }
+
+    .stockCard h3 {
+      margin: 8px 0;
+    }
+
+    .stockNumber {
+      font-size: 38px;
+      font-weight: bold;
+    }
+
+    .stockDescription {
+      margin-top: 5px;
+      font-size: 14px;
+      opacity: .9;
+    }
+
+    .summaryInfo {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .summaryBox {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 5px 15px rgba(0,0,0,.07);
+    }
+
+    .summaryBox strong {
+      font-size: 25px;
+      display: block;
+      color: #2563eb;
+    }
+
+    /* =====================================================
+       TABLE
+       ===================================================== */
+
+    .itemStatus {
+      margin-top: 20px;
+    }
+
+    .itemStatus h3 {
+      margin-bottom: 12px;
+    }
+
+    .statusTableWrapper {
+      overflow-x: auto;
+      background: white;
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th {
+      background: #1e3a8a;
+      color: white;
+      padding: 12px;
+      text-align: left;
+    }
+
+    td {
+      padding: 11px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    tr:hover {
+      background: #f8fafc;
+    }
+
+    .statusBadge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .badgeNo {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .badgeLow {
+      background: #ffedd5;
+      color: #c2410c;
+    }
+
+    .badgeOn {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .reportTable {
+      margin-top: 20px;
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .reportGroupedTable {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .reportGroupedTable th,
+    .reportGroupedTable td {
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .reportGroupedTable th {
+      background: #1f2937;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .reportGroupedTable .dateHeader {
+      text-align: center;
+      background: #1f2937;
+    }
+
+    .reportGroupedTable .inHeader,
+    .reportGroupedTable .outHeader {
+      background: #374151;
+      text-align: center;
+    }
+
+    .reportGroupedTable .productNameCell {
+      text-align: left;
+    }
+
+    .reportGroupedTable .totalValue {
+      font-weight: bold;
+    }
+
+    .reportGroupedTable .reportTotalRow {
+      font-weight: bold;
+      background: #e5e7eb;
+    }
+
+    .reportGroupedTable .reportTotalRow td {
+      border-top: 2px solid #1f2937;
+    }
+
+    .reportTitle {
+      color: #1d4ed8;
+      margin-top: 0;
+    }
+
+    /* =====================================================
+       TABLE-STYLE STOCK ENTRY FORM
+       ===================================================== */
+    .entryTableWrapper {
+      width: 100%; overflow-x: auto; margin-top: 18px;
+      border-radius: 12px; border: 1px solid #d1d5db; background: #ffffff;
+    }
+    .entryTable { width: 100%; min-width: 680px; border-collapse: collapse; }
+    .entryTable th {
+      background: #1e3a8a; color: #ffffff; padding: 13px 10px;
+      text-align: center; white-space: nowrap;
+    }
+    .entryTable td { padding: 7px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+    .entryTable tbody tr:nth-child(even) { background: #f8fafc; }
+    .entryTable input {
+      width: 100%; min-width: 90px; padding: 10px; border: 1px solid #cbd5e1;
+      border-radius: 7px; font-size: 14px;
+    }
+    .entryTable .entryCode, .entryTable .entryRemaining {
+      background: #f1f5f9; color: #334155; text-align: center; font-weight: bold;
+    }
+    body.darkMode .entryTableWrapper { background: #1e293b; border-color: #475569; }
+    body.darkMode .entryTable td { border-bottom-color: #475569; }
+    body.darkMode .entryTable tbody tr:nth-child(even) { background: #263449; }
+    body.darkMode .entryTable .entryCode, body.darkMode .entryTable .entryRemaining {
+      background: #0f172a; color: #e5e7eb;
+    }
+
+    /* =====================================================
+       MOBILE
+       ===================================================== */
+
+    @media(max-width: 800px) {
+
+      .themeToggle {
+        top: 10px;
+        right: 10px;
+        padding: 9px 13px;
+        font-size: 12px;
+      }
+
+      .homeButtons {
+        grid-template-columns: 1fr;
+      }
+
+      .stockCards {
+        grid-template-columns: 1fr;
+      }
+
+      .summaryInfo {
+        grid-template-columns: 1fr;
+      }
+
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .homeCard {
+        padding: 25px;
+      }
+
+      .homeCard h1 {
+        font-size: 27px;
+      }
+
+      .shapeCircle {
+        width: 100px;
+        height: 100px;
+      }
+
+      .shapeSquare {
+        width: 80px;
+        height: 80px;
+      }
+
+      .shapeTriangle {
+        border-left-width: 40px;
+        border-right-width: 40px;
+        border-bottom-width: 70px;
+      }
+
+      .shapeDiamond {
+        width: 65px;
+        height: 65px;
+      }
+
+      .animationRing {
+        width: 300px;
+        height: 300px;
+      }
+
+      .animationRingTwo {
+        width: 450px;
+        height: 450px;
+      }
+
+    }
+
+    /* =====================================================
+       REDUCE ANIMATION FOR USERS WHO PREFER LESS MOTION
+       ===================================================== */
+
+    @media(prefers-reduced-motion: reduce) {
+
+      .floatingShape,
+      .animationRing,
+      .animationRingTwo {
+        animation: none !important;
+      }
+
+    }
+
+  
+
+    /* =====================================================
+       ENHANCED MOVING FOOD BACKGROUND
+       ===================================================== */
+
+    body {
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .foodBackground {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255, 183, 77, .16), transparent 28%),
+        radial-gradient(circle at 82% 25%, rgba(239, 68, 68, .12), transparent 30%),
+        radial-gradient(circle at 45% 80%, rgba(34, 197, 94, .10), transparent 30%),
+        linear-gradient(135deg, #fffaf0 0%, #f7fbff 48%, #fff7ed 100%);
+    }
+
+    .foodFloat {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: clamp(42px, 5vw, 72px);
+      height: clamp(42px, 5vw, 72px);
+      font-size: clamp(25px, 3.2vw, 46px);
+      opacity: .78;
+      filter: drop-shadow(0 8px 10px rgba(31, 41, 55, .16));
+      user-select: none;
+      animation: foodDrift 16s ease-in-out infinite;
+    }
+
+    .foodFloat:nth-child(2n) {
+      animation-name: foodDriftReverse;
+    }
+
+    .foodFloat:nth-child(3n) {
+      animation-duration: 21s;
+    }
+
+    .foodFloat:nth-child(4n) {
+      animation-duration: 13s;
+    }
+
+    .food1  { left: 3%;  top: 10%; animation-delay: -2s; }
+    .food2  { left: 14%; top: 72%; animation-delay: -9s; }
+    .food3  { left: 27%; top: 18%; animation-delay: -5s; }
+    .food4  { left: 38%; top: 78%; animation-delay: -12s; }
+    .food5  { left: 50%; top: 8%;  animation-delay: -7s; }
+    .food6  { left: 62%; top: 68%; animation-delay: -3s; }
+    .food7  { left: 74%; top: 14%; animation-delay: -11s; }
+    .food8  { left: 87%; top: 73%; animation-delay: -6s; }
+    .food9  { left: 91%; top: 35%; animation-delay: -14s; }
+    .food10 { left: 7%;  top: 42%; animation-delay: -8s; }
+    .food11 { left: 31%; top: 48%; animation-delay: -4s; }
+    .food12 { left: 57%; top: 39%; animation-delay: -10s; }
+    .food13 { left: 81%; top: 52%; animation-delay: -1s; }
+    .food14 { left: 45%; top: 92%; animation-delay: -13s; }
+
+    @keyframes foodDrift {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(-8deg) scale(1);
+      }
+      25% {
+        transform: translate3d(28px, -38px, 0) rotate(8deg) scale(1.08);
+      }
+      50% {
+        transform: translate3d(-18px, -78px, 0) rotate(-4deg) scale(.94);
+      }
+      75% {
+        transform: translate3d(35px, -35px, 0) rotate(10deg) scale(1.05);
+      }
+    }
+
+    @keyframes foodDriftReverse {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(8deg) scale(1);
+      }
+      25% {
+        transform: translate3d(-32px, 35px, 0) rotate(-10deg) scale(1.06);
+      }
+      50% {
+        transform: translate3d(20px, 72px, 0) rotate(5deg) scale(.93);
+      }
+      75% {
+        transform: translate3d(-28px, 30px, 0) rotate(-8deg) scale(1.04);
+      }
+    }
+
+    body.darkMode .foodBackground {
+      background:
+        radial-gradient(circle at 15% 20%, rgba(245, 158, 11, .10), transparent 28%),
+        radial-gradient(circle at 82% 25%, rgba(239, 68, 68, .09), transparent 30%),
+        radial-gradient(circle at 45% 80%, rgba(34, 197, 94, .07), transparent 30%),
+        linear-gradient(135deg, #0b1220 0%, #111827 48%, #172033 100%);
+    }
+
+    body.darkMode .foodFloat {
+      opacity: .60;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,.45));
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .foodFloat {
+        animation: none !important;
+      }
+    }
+
+
+    .stockOutModal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, .68);
+    }
+    .stockOutModalCard {
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      border-radius: 16px;
+      background: #fff;
+      color: #1f2937;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      text-align: center;
+    }
+    .stockOutModalCard h2 { margin: 0 0 12px; }
+    .stockOutModalCard p { line-height: 1.6; margin: 0 0 22px; }
+    .stockOutModalActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .stockOutModalActions .btn { margin: 0; }
+    .stockOutReasonInput {
+      width: 100%; min-height: 110px; box-sizing: border-box; resize: vertical;
+      padding: 12px; margin: 8px 0 18px; border: 1px solid #cbd5e1;
+      border-radius: 10px; font: inherit; text-align: left;
+    }
+    .stockOutModalCard .reasonHint { font-size: 13px; color: #64748b; margin: -8px 0 12px; }
+
+  </style>
+
 </head>
+
+
 <body>
-  <p>Opening Top Plaza Stock Management System...</p>
-  <p>If you are not redirected, replace the Apps Script URL placeholder in this file.</p>
+
+
+<!-- =======================================================
+     ENHANCED MOVING FOOD BACKGROUND
+     The Top Plaza logo/dashboard image remains untouched.
+     ======================================================= -->
+<div class="foodBackground" aria-hidden="true">
+  <span class="foodFloat food1">🍕</span>
+  <span class="foodFloat food2">🍔</span>
+  <span class="foodFloat food3">🍜</span>
+  <span class="foodFloat food4">🍗</span>
+  <span class="foodFloat food5">🥗</span>
+  <span class="foodFloat food6">🍣</span>
+  <span class="foodFloat food7">🍰</span>
+  <span class="foodFloat food8">🍩</span>
+  <span class="foodFloat food9">☕</span>
+  <span class="foodFloat food10">🍟</span>
+  <span class="foodFloat food11">🌮</span>
+  <span class="foodFloat food12">🥐</span>
+  <span class="foodFloat food13">🍝</span>
+  <span class="foodFloat food14">🧁</span>
+</div>
+
+
+
+<!-- =======================================================
+     LIGHT / DARK MODE BUTTON
+     ======================================================= -->
+
+<button
+  id="themeToggle"
+  class="themeToggle"
+  onclick="toggleTheme()"
+>
+  🌙 Dark Mode
+</button>
+
+
+<!-- =======================================================
+     MAIN HOME PAGE
+     THIS IS THE FIRST PAGE THAT OPENS
+     ======================================================= -->
+
+<div
+  id="homePage"
+  class="page active"
+>
+
+  <div class="container mainHome">
+
+
+    <div class="animatedBackground">
+
+      <div class="animationRing"></div>
+
+      <div class="animationRingTwo"></div>
+
+      <div class="floatingShape shapeCircle"></div>
+
+      <div class="floatingShape shapeSquare"></div>
+
+      <div class="floatingShape shapeTriangle"></div>
+
+      <div class="floatingShape shapeDiamond"></div>
+
+      <div class="floatingShape smallShape one"></div>
+
+      <div class="floatingShape smallShape two"></div>
+
+      <div class="floatingShape smallShape three"></div>
+
+      <div class="floatingShape smallShape four"></div>
+
+      <div class="floatingShape smallShape five"></div>
+
+    </div>
+
+
+    <div class="homeCard">
+
+
+      <img
+        id="dashboardImage"
+        class="dashboardImage"
+        style="display:none;"
+        alt="Dashboard Image"
+      >
+
+
+      <h1>
+        TOP PLAZA STOCK MANAGEMENT SYSTEM
+      </h1>
+
+
+      <p>
+        Select an option below to continue
+      </p>
+
+
+      <div class="homeButtons">
+
+
+        <button
+          class="homeButton entryHomeButton"
+          onclick="showEntryForm()"
+        >
+
+          <span class="bigIcon">
+            📝
+          </span>
+
+          <span class="buttonTitle">
+            ENTRY FORM
+          </span>
+
+          <span class="buttonText">
+            Record Stock IN or Stock OUT
+          </span>
+
+        </button>
+
+
+        <button
+          class="homeButton reportHomeButton"
+          onclick="showReportForm()"
+        >
+
+          <span class="bigIcon">
+            📊
+          </span>
+
+          <span class="buttonTitle">
+            STOCKS REPORT
+          </span>
+
+          <span class="buttonText">
+            View reports and stock monitoring
+          </span>
+
+        </button>
+
+        <button class="homeButton reportHomeButton" style="background:linear-gradient(135deg,#ea580c,#b91c1c);" onclick="showExpirationMonitoring()">
+          <span class="bigIcon">⏳</span>
+          <span class="buttonTitle">EXPIRATION DATE MONITORING</span>
+          <span class="buttonText">Find earliest-to-expire items and print the list</span>
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     ENTRY FORM PAGE
+     ======================================================= -->
+
+<div
+  id="entryPage"
+  class="page"
+>
+
+  <div class="container">
+
+
+    <div class="header">
+
+      <h1>
+       TOP PLAZA STOCK MANAGEMENT SYSTEM
+      </h1>
+
+      <p>
+        Stock Entry
+      </p>
+
+    </div>
+
+
+    <div class="topNavigation">
+
+      <button
+        class="navButton"
+        onclick="showHomePage()"
+      >
+        🏠 MAIN
+      </button>
+
+      <button
+        class="navButton"
+        onclick="showReportForm()"
+      >
+        📊 STOCKS REPORT
+      </button>
+
+      <button
+        class="navButton"
+        onclick="showExpirationMonitoring()"
+      >
+        ⏳ EXPIRATION DATE
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>
+        Stock Entry
+      </h2>
+
+
+      <p>Search an item by name. The code and remaining stock will fill automatically. The form starts with 10 rows.</p>
+      <datalist id="itemList"></datalist>
+      <div class="entryTableWrapper">
+        <table class="entryTable">
+          <thead><tr><th>CODE</th><th>ITEM</th><th>REMAINING STOCK</th><th>QUANTITY</th><th>EXPIRATION DATE (OPTIONAL)</th></tr></thead>
+          <tbody id="batchRows"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btnGenerate" onclick="addBatchRows(10)">＋ ADD 10 MORE ROWS</button>
+      <label for="requesterName">Requester Name</label>
+      <input id="requesterName" type="text" autocomplete="name" placeholder="Enter requester name" required>
+      <label for="departmentName">Department</label>
+      <input id="departmentName" type="text" placeholder="Enter department" required>
+      <div class="buttons">
+        <button class="btn btnIn" onclick="submitBatch('IN')">➕ STOCK IN ALL</button>
+        <button class="btn btnOut" onclick="submitBatch('OUT')">➖ STOCK OUT ALL</button>
+      </div>
+      <div
+        id="entryMessage"
+        class="message"
+      ></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     STOCKS REPORT PAGE
+     ======================================================= -->
+
+<div
+  id="reportPage"
+  class="page"
+>
+
+  <div class="container">
+
+
+    <div class="header">
+
+      <h1>
+       TOP PLAZA STOCK MANAGEMENT SYSTEM
+      </h1>
+
+      <p>
+        Stocks Report & Stock Monitoring
+      </p>
+
+    </div>
+
+
+    <div class="topNavigation">
+
+      <button
+        class="navButton"
+        onclick="showHomePage()"
+      >
+        🏠 MAIN
+      </button>
+
+      <button
+        class="navButton"
+        onclick="showEntryForm()"
+      >
+        📝 ENTRY FORM
+      </button>
+
+      <button
+        class="navButton"
+        onclick="showExpirationMonitoring()"
+      >
+        ⏳ EXPIRATION DATE
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+
+      <h2 class="reportTitle">
+        Stocks Report
+      </h2>
+
+
+      <label>
+        Date From
+      </label>
+
+
+      <input
+        type="date"
+        id="dateFrom"
+      >
+
+
+      <label>
+        Date To
+      </label>
+
+
+      <input
+        type="date"
+        id="dateTo"
+      >
+
+
+      <button
+        class="btn btnGenerate"
+        onclick="generateReport()"
+      >
+        🔍 GENERATE STOCKS REPORT
+      </button>
+
+      <button
+        class="btn btnGenerate"
+        type="button"
+        id="toggleReportVisibilityButton"
+        onclick="toggleGeneratedReport()"
+        style="display:none;"
+      >
+        🙈 HIDE GENERATED REPORT
+      </button>
+
+    </div>
+
+
+    <div
+      id="reportResult"
+      class="card"
+    ></div>
+
+
+    <div
+      class="card"
+      id="reportExcelActions"
+      style="display:none;"
+    >
+
+      <button
+        class="btn btnGenerate"
+        onclick="saveReportToExcel()"
+      >
+        💾 SAVE STOCKS REPORT TO EXCEL
+      </button>
+
+
+    </div>
+
+
+    <div class="card">
+
+
+      <div class="monitorHeader">
+
+        <h2>
+          📦 STOCK MONITORING
+        </h2>
+
+        
+
+      </div>
+
+
+      <div class="stockCards">
+
+
+        <div
+          class="stockCard noStockCard"
+          onclick="showStockStatusPart('NO STOCKS')"
+          style="cursor:pointer;"
+        >
+
+          <div class="icon">
+            🔴
+          </div>
+
+          <h3>
+            NO STOCKS
+          </h3>
+
+          <div
+            class="stockNumber"
+            id="noStocksCount"
+          >
+            0
+          </div>
+
+          <div class="stockDescription">
+            Stock level is 0%
+          </div>
+
+        </div>
+
+
+        <div
+          class="stockCard lowStockCard"
+          onclick="showStockStatusPart('LOW STOCKS')"
+          style="cursor:pointer;"
+        >
+
+          <div class="icon">
+            🟠
+          </div>
+
+          <h3>
+            LOW STOCKS
+          </h3>
+
+          <div
+            class="stockNumber"
+            id="lowStocksCount"
+          >
+            0
+          </div>
+
+          <div class="stockDescription">
+            Stock level is 1% to 20%
+          </div>
+
+        </div>
+
+
+        <div
+          class="stockCard onStockCard"
+          onclick="showStockStatusPart('ON STOCKS')"
+          style="cursor:pointer;"
+        >
+
+          <div class="icon">
+            🟢
+          </div>
+
+          <h3>
+            ON STOCKS
+          </h3>
+
+          <div
+            class="stockNumber"
+            id="onStocksCount"
+          >
+            0
+          </div>
+
+          <div class="stockDescription">
+            Stock level is 21% or higher
+          </div>
+
+        </div>
+
+
+      </div>
+
+
+      <div class="summaryInfo">
+
+
+        <div class="summaryBox">
+
+          <span>
+            Total Items
+          </span>
+
+          <strong id="totalItems">
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="summaryBox">
+
+          <span>
+            Total Stocks
+          </span>
+
+          <strong id="totalStocks">
+            0
+          </strong>
+
+        </div>
+
+
+      </div>
+
+
+      <div class="itemStatus">
+
+        <h3>
+          📋 Item Stock Status
+        </h3>
+
+        <button
+          class="btn btnGenerate"
+          onclick="saveItemStockStatusToExcel()"
+        >
+          💾 SAVE ITEM STOCK STATUS TO EXCEL
+        </button>
+
+        <div
+          id="stockStatusTable"
+          class="statusTableWrapper"
+        ></div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- EXPIRATION DATE MONITORING PAGE -->
+<div id="expirationPage" class="page">
+  <div class="container">
+    <div class="header"><h1>TOP PLAZA STOCK MANAGEMENT SYSTEM</h1><p>Expiration Date Monitoring</p></div>
+    <div class="topNavigation">
+      <button class="navButton" onclick="showHomePage()">🏠 MAIN</button>
+      <button class="navButton" onclick="showEntryForm()">📝 ENTRY FORM</button>
+      <button class="navButton" onclick="showReportForm()">📊 STOCKS REPORT</button>
+    </div>
+    <div class="card">
+      <h2>⏳ Expiration Date Monitoring</h2>
+      <p>The list loads automatically and is sorted by earliest expiration date. Quantities are the total Stock IN quantities for each item and expiration date; Stock OUT is not deducted. Search uses the ITEM names in the Items sheet. If a selected date range has no matching entries, the full available expiration list is shown automatically.</p>
+      <label for="expiryFrom">Expiration Date From (optional)</label><input type="date" id="expiryFrom">
+      <label for="expiryTo">Expiration Date To (optional)</label><input type="date" id="expiryTo">
+      <label for="expiryItemSearch">Item Name Search (optional)</label><input type="text" id="expiryItemSearch" list="expiryItemOptions" placeholder="Type or select an item name"><datalist id="expiryItemOptions"></datalist>
+      <button class="btn btnGenerate" onclick="generateExpirationMonitoring()">🔍 SEARCH EXPIRATION DATES</button>
+      <button class="btn btnGenerate" onclick="printExpirationMonitoring()">🖨️ PRINT LIST</button>
+      <div id="expirationResults" class="reportTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STOCK IN TO STOCK OUT CONFIRMATION -->
+<div id="stockOutConfirmModal" class="stockOutModal" style="display:none;">
+  <div class="stockOutModalCard" role="dialog" aria-modal="true" aria-labelledby="stockOutModalTitle">
+    <h2 id="stockOutModalTitle">Stock IN Saved Successfully</h2>
+    <p>The items and quantities you just saved are ready. Would you like to record these same items as Stock OUT now?</p>
+    <div class="stockOutModalActions">
+      <button type="button" class="btn btnOut" onclick="proceedWithStockOut()">➖ PROCEED TO STOCK OUT</button>
+      <button type="button" class="btn btnGenerate" onclick="closeStockOutPrompt()">NOT NOW</button>
+    </div>
+  </div>
+</div>
+
+<!-- HTML STOCK OUT REASON POPUP -->
+<div id="stockOutReasonModal" class="stockOutModal" style="display:none;">
+  <div class="stockOutModalCard" role="dialog" aria-modal="true" aria-labelledby="stockOutReasonTitle">
+    <h2 id="stockOutReasonTitle">Reason for Stock OUT</h2>
+    <p>Enter one reason for this Stock OUT batch. The same reason will be saved for every item.</p>
+    <textarea id="stockOutReasonText" class="stockOutReasonInput" placeholder="Type reason here..." required></textarea>
+    <p class="reasonHint">Reason is required before saving.</p>
+    <div class="stockOutModalActions">
+      <button type="button" class="btn btnOut" onclick="confirmStockOutReason()">SAVE STOCK OUT</button>
+      <button type="button" class="btn btnGenerate" onclick="cancelStockOutReason()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub Pages frontend. The Apps Script URL below must be the deployed /exec URL. -->
+
+<script>
+  /* =====================================================
+     GOOGLE APPS SCRIPT API BRIDGE
+     Preserves the existing google.script.run call syntax below,
+     so the rest of the UI and business logic remains unchanged.
+     ===================================================== */
+  var APPS_SCRIPT_API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE';
+
+  (function installAppsScriptBridge() {
+    var successHandler = null;
+    var failureHandler = null;
+    var requestCounter = 0;
+    var pendingPosts = {};
+    var iframe = document.createElement('iframe');
+    iframe.name = 'tpAppsScriptApiFrame';
+    iframe.style.display = 'none';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.documentElement.appendChild(iframe);
+
+    function apiUrlReady() {
+      return APPS_SCRIPT_API_URL &&
+        APPS_SCRIPT_API_URL.indexOf('https://script.google.com/macros/s/') === 0 &&
+        /\/exec(?:\?|$)/.test(APPS_SCRIPT_API_URL);
+    }
+
+    function fail(handler, message) {
+      if (typeof handler === 'function') handler({message: message});
+      else console.error(message);
+    }
+
+    function invokeRead(method, args, onSuccess, onFailure) {
+      if (!apiUrlReady()) {
+        fail(onFailure, 'Please paste your deployed Apps Script /exec URL into APPS_SCRIPT_API_URL in index.html.');
+        return;
+      }
+      var callbackName = '__tpApiCallback_' + (++requestCounter);
+      var script = document.createElement('script');
+      var finished = false;
+      var timeout = window.setTimeout(function() {
+        finishError('The Apps Script API request timed out. Check the deployment URL and web app access settings.');
+      }, 45000);
+
+      function cleanup() {
+        if (finished) return;
+        finished = true;
+        window.clearTimeout(timeout);
+        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      function finishError(message) {
+        cleanup();
+        fail(onFailure, message);
+      }
+
+      window[callbackName] = function(response) {
+        cleanup();
+        if (response && response.success) {
+          if (typeof onSuccess === 'function') onSuccess(response.data);
+        } else {
+          fail(onFailure, response && response.error ? response.error : 'The Apps Script API returned an invalid response.');
+        }
+      };
+      script.onerror = function() {
+        finishError('Could not contact Apps Script. Confirm that the web app is deployed for access by the intended users.');
+      };
+      var query = '?action=api&method=' + encodeURIComponent(method) +
+        '&args=' + encodeURIComponent(JSON.stringify(args || [])) +
+        '&callback=' + encodeURIComponent(callbackName) +
+        '&_=' + Date.now();
+      script.src = APPS_SCRIPT_API_URL + query;
+      document.head.appendChild(script);
+    }
+
+    function invokeWrite(method, args, onSuccess, onFailure) {
+      if (!apiUrlReady()) {
+        fail(onFailure, 'Please paste your deployed Apps Script /exec URL into APPS_SCRIPT_API_URL in index.html.');
+        return;
+      }
+      var requestId = 'tp_' + Date.now() + '_' + (++requestCounter);
+      pendingPosts[requestId] = {success: onSuccess, failure: onFailure};
+
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = APPS_SCRIPT_API_URL;
+      form.target = iframe.name;
+      form.style.display = 'none';
+      var field = document.createElement('textarea');
+      field.name = 'payload';
+      field.value = JSON.stringify({requestId: requestId, method: method, args: args || []});
+      form.appendChild(field);
+      document.body.appendChild(form);
+
+      var timeout = window.setTimeout(function() {
+        var pending = pendingPosts[requestId];
+        if (!pending) return;
+        delete pendingPosts[requestId];
+        fail(pending.failure, 'The save request timed out. Check the Apps Script deployment and try again only after confirming whether the entry was saved.');
+        if (form.parentNode) form.parentNode.removeChild(form);
+      }, 60000);
+      pendingPosts[requestId].timeout = timeout;
+      form.submit();
+      window.setTimeout(function() {
+        if (form.parentNode) form.parentNode.removeChild(form);
+      }, 65000);
+    }
+
+    window.addEventListener('message', function(event) {
+      // Accept messages only from this page's hidden response iframe.
+      if (event.source !== iframe.contentWindow || !event.data || !event.data.requestId) return;
+      var pending = pendingPosts[event.data.requestId];
+      if (!pending) return;
+      delete pendingPosts[event.data.requestId];
+      window.clearTimeout(pending.timeout);
+      if (event.data.success) {
+        if (typeof pending.success === 'function') pending.success(event.data.data);
+      } else {
+        fail(pending.failure, event.data.error || 'The Apps Script save failed.');
+      }
+    });
+
+    // Minimal compatibility layer for the original frontend's existing calls.
+    var run = {
+      withSuccessHandler: function(fn) { successHandler = fn; return this; },
+      withFailureHandler: function(fn) { failureHandler = fn; return this; },
+      getItemList: function() { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getItemList', [], s, f); },
+      getImageFromCell: function() { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getImageFromCell', [], s, f); },
+      getExpirationMonitoring: function(from, to, item) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getExpirationMonitoring', [from, to, item], s, f); },
+      getReportData: function(from, to) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getReportData', [from, to], s, f); },
+      getStockSummary: function() { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getStockSummary', [], s, f); },
+      saveEntries: function(entries, status, requester, department) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveEntries', [entries, status, requester, department], s, f); }
+    };
+
+    window.google = window.google || {};
+    window.google.script = window.google.script || {};
+    window.google.script.run = run;
+  })();
+
+
+
+  var currentItem = null;
+
+
+  /* =====================================================
+     LIGHT / DARK MODE
+     ===================================================== */
+
+  function toggleTheme() {
+
+    document
+      .body
+      .classList
+      .toggle('darkMode');
+
+
+    var isDark =
+      document
+        .body
+        .classList
+        .contains('darkMode');
+
+
+    var button =
+      document.getElementById(
+        'themeToggle'
+      );
+
+
+    if (isDark) {
+
+      button.textContent =
+        '☀️ Light Mode';
+
+      localStorage.setItem(
+        'stockManagementTheme',
+        'dark'
+      );
+
+    } else {
+
+      button.textContent =
+        '🌙 Dark Mode';
+
+      localStorage.setItem(
+        'stockManagementTheme',
+        'light'
+      );
+
+    }
+
+  }
+
+
+  /* =====================================================
+     LOAD SAVED THEME
+     ===================================================== */
+
+  function loadTheme() {
+
+    var savedTheme =
+      localStorage.getItem(
+        'stockManagementTheme'
+      );
+
+
+    var button =
+      document.getElementById(
+        'themeToggle'
+      );
+
+
+    if (savedTheme === 'dark') {
+
+      document
+        .body
+        .classList
+        .add('darkMode');
+
+      button.textContent =
+        '☀️ Light Mode';
+
+    } else {
+
+      document
+        .body
+        .classList
+        .remove('darkMode');
+
+      button.textContent =
+        '🌙 Dark Mode';
+
+    }
+
+  }
+
+
+  /* =====================================================
+     SHOW MAIN PAGE
+     ===================================================== */
+
+  function showHomePage() {
+
+    hideAllPages();
+
+    document
+      .getElementById('homePage')
+      .classList.add('active');
+
+  }
+
+
+  /* =====================================================
+     SHOW ENTRY FORM
+     ===================================================== */
+
+  function showEntryForm() {
+
+    hideAllPages();
+
+    document
+      .getElementById('entryPage')
+      .classList.add('active');
+
+  }
+
+
+  /* =====================================================
+     SHOW REPORT FORM
+     ===================================================== */
+
+  function showReportForm() {
+
+    hideAllPages();
+
+    document
+      .getElementById('reportPage')
+      .classList.add('active');
+
+    setDefaultDates();
+
+    loadStockSummary();
+
+  }
+
+
+
+
+  function showExpirationMonitoring() {
+    hideAllPages();
+    document.getElementById('expirationPage').classList.add('active');
+    // Load immediately on entry, with blank filters to show the earliest expirations.
+    document.getElementById('expiryFrom').value = '';
+    document.getElementById('expiryTo').value = '';
+    document.getElementById('expiryItemSearch').value = '';
+    if (Array.isArray(catalogItems) && catalogItems.length) {
+      populateExpiryItemOptions(catalogItems);
+    } else {
+      google.script.run.withSuccessHandler(function(items) {
+        populateExpiryItemOptions(Array.isArray(items) ? items : []);
+      }).getItemList();
+    }
+    generateExpirationMonitoring();
+  }
+
+  function populateExpiryItemOptions(items) {
+    var list = document.getElementById('expiryItemOptions');
+    if (!list) return;
+    list.innerHTML = items.map(function(it) {
+      return '<option value="' + escapeExpiryHtml(it.name || '') + '"></option>';
+    }).join('');
+  }
+
+
+  /* =====================================================
+     HIDE ALL PAGES
+     ===================================================== */
+
+  function hideAllPages() {
+
+    document
+      .getElementById('homePage')
+      .classList.remove('active');
+
+    document
+      .getElementById('entryPage')
+      .classList.remove('active');
+
+    document
+      .getElementById('reportPage')
+      .classList.remove('active');
+    document.getElementById('expirationPage').classList.remove('active');
+
+  }
+
+
+  /* =====================================================
+     LOAD DASHBOARD IMAGE / LOGO
+     ===================================================== */
+
+  function loadDashboardImage() {
+
+    google.script.run
+
+      .withSuccessHandler(function(result) {
+
+        if (
+          result &&
+          result.success &&
+          result.imageUrl
+        ) {
+
+          var image =
+            document.getElementById(
+              'dashboardImage'
+            );
+
+          image.src =
+            result.imageUrl;
+
+          image.style.display =
+            'block';
+
+        }
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        console.error(error);
+
+      })
+
+      .getImageFromCell();
+
+  }
+
+
+  /* =====================================================
+     LOAD ITEMS
+     ===================================================== */
+
+  var batchRowCounter = 0;
+  var batchRowsInitialized = false;
+  var catalogItems = [];
+
+  function normalizeItemText(value) {
+    return String(value == null ? '' : value)
+      .replace(/\u00a0/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase();
+  }
+
+  function loadItems() {
+    google.script.run
+      .withSuccessHandler(function(items) {
+        catalogItems = Array.isArray(items) ? items : [];
+        var dl = document.getElementById('itemList');
+        dl.innerHTML = '';
+
+        catalogItems.forEach(function(item) {
+          if (!item || !item.name) return;
+          var opt = document.createElement('option');
+          opt.value = String(item.name);
+          dl.appendChild(opt);
+        });
+
+        if (!batchRowsInitialized) {
+          addBatchRows(10);
+          batchRowsInitialized = true;
+        }
+
+        if (!catalogItems.length) {
+          showMessage('No items were returned from the Items sheet. Please check the catalog sheet and its data.', false);
+        }
+      })
+      .withFailureHandler(function(error) {
+        showMessage('Could not load the item catalog: ' + (error.message || error), false);
+      })
+      .getItemList();
+  }
+
+  function addBatchRows(count) {
+    var tbody = document.getElementById('batchRows');
+    var currentCount = tbody.querySelectorAll('.batchRow').length;
+    var addCount = Number(count) || 10;
+
+    if (currentCount >= 250) {
+      showMessage('The maximum is 250 item rows per submission.', false);
+      return;
+    }
+
+    addCount = Math.min(addCount, 250 - currentCount);
+
+    for (let i = 0; i < addCount; i++) {
+      // IMPORTANT: use block-scoped row so each event handler keeps its own row.
+      const row = document.createElement('tr');
+      row.className = 'batchRow';
+      row.dataset.rowId = String(++batchRowCounter);
+      row.innerHTML =
+        '<td><input class="entryCode" type="text" placeholder="—" readonly></td>' +
+        '<td><input class="batchItem" type="text" list="itemList" placeholder="Search item name" autocomplete="off"></td>' +
+        '<td><input class="entryRemaining" type="text" value="—" readonly></td>' +
+        '<td><input class="batchQty" type="number" min="0.001" step="any" placeholder="Quantity"></td>' +
+        '<td><input class="batchExpiry" type="date" title="Optional expiration date"></td>';
+      tbody.appendChild(row);
+
+      const itemField = row.querySelector('.batchItem');
+      // input fires immediately when a datalist suggestion is selected.
+      ['input', 'change', 'blur'].forEach(function(eventName) {
+        itemField.addEventListener(eventName, function() {
+          resolveBatchRow(row);
+        });
+      });
+      itemField.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          resolveBatchRow(row);
+          row.querySelector('.batchQty').focus();
+        }
+      });
+    }
+  }
+
+  function resolveBatchRow(row) {
+    var field = row.querySelector('.batchItem');
+    var value = field.value;
+    var wanted = normalizeItemText(value);
+    var codeField = row.querySelector('.entryCode');
+    var remainingField = row.querySelector('.entryRemaining');
+
+    if (!wanted) {
+      delete row.dataset.itemName;
+      codeField.value = '';
+      remainingField.value = '—';
+      return;
+    }
+
+    // Resolve from the catalog already loaded by getItemList().
+    // This avoids delayed server callbacks and fills the exact row selected.
+    var match = catalogItems.find(function(item) {
+      return normalizeItemText(item.name) === wanted;
+    });
+
+    if (match) {
+      row.dataset.itemName = String(match.name);
+      codeField.value = String(match.code || '');
+      remainingField.value = String(Number(match.stocksLeft) || 0);
+    } else {
+      delete row.dataset.itemName;
+      codeField.value = '';
+      remainingField.value = '—';
+    }
+  }
+
+  var pendingStockOut = null;
+  var batchSubmissionInProgress = false;
+
+  function submitBatch(status) {
+    if (batchSubmissionInProgress) return;
+
+    var requester = document.getElementById('requesterName').value.trim();
+    var department = document.getElementById('departmentName').value.trim();
+
+    if (!requester) {
+      showMessage('Please enter the requester name before submitting.', false);
+      document.getElementById('requesterName').focus();
+      return;
+    }
+    if (!department) {
+      showMessage('Please enter the department before submitting.', false);
+      document.getElementById('departmentName').focus();
+      return;
+    }
+
+    var entries = [];
+    var rows = Array.from(document.querySelectorAll('.batchRow'));
+    for (var row of rows) {
+      var raw = row.querySelector('.batchItem').value.trim();
+      var qtyText = row.querySelector('.batchQty').value;
+      var qty = Number(qtyText);
+      if (!raw && !qtyText) continue;
+      if (!raw || !row.dataset.itemName || !Number.isFinite(qty) || qty <= 0) {
+        showMessage('Please select a valid item name and enter a positive quantity on every used row.', false);
+        return;
+      }
+      entries.push({
+        item: row.dataset.itemName,
+        quantity: qty,
+        expirationDate: row.querySelector('.batchExpiry').value
+      });
+    }
+
+    if (!entries.length) {
+      showMessage('Add at least one item and quantity.', false);
+      return;
+    }
+
+    if (status === 'OUT') {
+      pendingReasonSubmission = {
+        entries: entries,
+        status: status,
+        requester: requester,
+        department: department
+      };
+      openStockOutReasonModal();
+      return;
+    }
+    entries.forEach(function(e) { e.reason = ''; });
+    saveBatchEntries(entries, status, requester, department);
+  }
+
+  function saveBatchEntries(entries, status, requester, department) {
+    batchSubmissionInProgress = true;
+    google.script.run.withSuccessHandler(function(r) {
+      batchSubmissionInProgress = false;
+      showMessage(r.message + ' Items saved: ' + r.savedCount + '.', true);
+
+      // Keep the original transaction details for the optional follow-up OUT.
+      if (status === 'IN') {
+        pendingStockOut = {
+          entries: entries.map(function(entry) {
+            return {item: entry.item, quantity: entry.quantity, expirationDate: entry.expirationDate || '', reason: entry.reason || ''};
+          }),
+          requester: requester,
+          department: department
+        };
+      }
+
+      document.getElementById('requesterName').value = '';
+      document.getElementById('departmentName').value = '';
+      document.getElementById('batchRows').innerHTML = '';
+      batchRowCounter = 0;
+      addBatchRows(10);
+      // Refresh cached stock balances after either IN or OUT is recorded.
+      loadItems();
+
+      if (status === 'IN') {
+        document.getElementById('stockOutConfirmModal').style.display = 'flex';
+      }
+    }).withFailureHandler(function(e) {
+      batchSubmissionInProgress = false;
+      showMessage(e.message || e, false);
+    }).saveEntries(entries, status, requester, department);
+  }
+
+  var pendingReasonSubmission = null;
+
+  function openStockOutReasonModal() {
+    var modal = document.getElementById('stockOutReasonModal');
+    var field = document.getElementById('stockOutReasonText');
+    field.value = '';
+    modal.style.display = 'flex';
+    field.focus();
+  }
+
+  function confirmStockOutReason() {
+    if (!pendingReasonSubmission || batchSubmissionInProgress) return;
+    var field = document.getElementById('stockOutReasonText');
+    var reason = field.value.trim();
+    if (!reason) {
+      showMessage('Reason is required for Stock OUT. Nothing was saved.', false);
+      field.focus();
+      return;
+    }
+    var transaction = pendingReasonSubmission;
+    transaction.entries.forEach(function(entry) { entry.reason = reason; });
+    closeStockOutReasonModal();
+    saveBatchEntries(transaction.entries, transaction.status, transaction.requester, transaction.department);
+  }
+
+  function cancelStockOutReason() {
+    closeStockOutReasonModal();
+  }
+
+  function closeStockOutReasonModal() {
+    var modal = document.getElementById('stockOutReasonModal');
+    if (modal) modal.style.display = 'none';
+    pendingReasonSubmission = null;
+  }
+
+  function proceedWithStockOut() {
+    if (!pendingStockOut || batchSubmissionInProgress) return;
+    var transaction = pendingStockOut;
+    closeStockOutPrompt();
+    pendingReasonSubmission = {
+      entries: transaction.entries,
+      status: 'OUT',
+      requester: transaction.requester,
+      department: transaction.department
+    };
+    openStockOutReasonModal();
+  }
+
+  function closeStockOutPrompt() {
+    var modal = document.getElementById('stockOutConfirmModal');
+    if (modal) modal.style.display = 'none';
+    pendingStockOut = null;
+  }
+
+
+
+  var expirationMonitorRows = [];
+  function generateExpirationMonitoring() {
+    var from = document.getElementById('expiryFrom').value;
+    var to = document.getElementById('expiryTo').value;
+    var item = document.getElementById('expiryItemSearch').value.trim();
+    google.script.run.withSuccessHandler(function(rows) {
+      expirationMonitorRows = Array.isArray(rows) ? rows : [];
+      var host = document.getElementById('expirationResults');
+      if (!expirationMonitorRows.length) {
+        host.innerHTML = '<p>No dated Stock IN quantities are available for the selected item(s).</p>';
+        return;
+      }
+      var html = '<table><thead><tr><th>EXPIRATION DATE</th><th>ITEM</th><th>TOTAL STOCK IN QUANTITY</th></tr></thead><tbody>';
+      expirationMonitorRows.forEach(function(r) {
+        html += '<tr><td>' + escapeExpiryHtml(formatExpiryDate(r.expirationDate)) + '</td><td>' + escapeExpiryHtml(r.item) +
+          '</td><td>' + escapeExpiryHtml(r.quantity) + '</td></tr>';
+      });
+      html += '</tbody></table><p><b>Item/expiration groups:</b> ' + expirationMonitorRows.length + ' (earliest expiration first; Stock OUT not deducted)</p>';
+      host.innerHTML = html;
+    }).withFailureHandler(function(e) {
+      document.getElementById('expirationResults').innerHTML = '<p class="error">' + escapeExpiryHtml(e.message || e) + '</p>';
+    }).getExpirationMonitoring(from, to, item);
+  }
+  function formatExpiryDate(v) {
+    if (!v) return '';
+    var p = String(v).split('-');
+    return p.length === 3 ? p[1] + '/' + p[2] + '/' + p[0] : v;
+  }
+  function escapeExpiryHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function printExpirationMonitoring() {
+    if (!expirationMonitorRows.length) {
+      showMessage('Generate the expiration list first.', false);
+      return;
+    }
+    var printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the expiration list.');
+      return;
+    }
+    var content = document.getElementById('expirationResults').innerHTML;
+    printWindow.document.write('<!doctype html><html><head><title>Expiration Date Monitoring</title><style>body{font-family:Arial;padding:20px}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #888;padding:7px;text-align:left;font-size:12px}th{background:#eee}</style></head><body><h2>TOP PLAZA STOCK MANAGEMENT SYSTEM<br>EXPIRATION DATE MONITORING</h2>' + content + '</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  /* =====================================================
+     MESSAGE
+     ===================================================== */
+
+  function showMessage(
+    message,
+    success
+  ) {
+
+    var box =
+      document.getElementById(
+        'entryMessage'
+      );
+
+
+    box.textContent =
+      message;
+
+
+    box.className =
+      'message ' +
+      (
+        success
+          ? 'success'
+          : 'error'
+      );
+
+
+    box.style.display =
+      'block';
+
+
+    setTimeout(function() {
+
+      box.style.display =
+        'none';
+
+    }, 5000);
+
+  }
+
+
+  /* =====================================================
+     DEFAULT DATES
+     ===================================================== */
+
+  function setDefaultDates() {
+
+    var today =
+      new Date();
+
+
+    var year =
+      today.getFullYear();
+
+
+    var month =
+      String(
+        today.getMonth() + 1
+      ).padStart(2, '0');
+
+
+    var day =
+      String(
+        today.getDate()
+      ).padStart(2, '0');
+
+
+    var date =
+      year +
+      '-' +
+      month +
+      '-' +
+      day;
+
+
+    document
+      .getElementById('dateFrom')
+      .value =
+        date;
+
+
+    document
+      .getElementById('dateTo')
+      .value =
+        date;
+
+  }
+
+
+  function toggleGeneratedReport() {
+    var report = document.getElementById('reportResult');
+    var button = document.getElementById('toggleReportVisibilityButton');
+    if (!report || !button) return;
+
+    var isHidden = report.style.display === 'none';
+    report.style.display = isHidden ? 'block' : 'none';
+    button.textContent = isHidden
+      ? '🙈 HIDE GENERATED REPORT'
+      : '👁️ SHOW GENERATED REPORT';
+  }
+
+  /* =====================================================
+     GENERATE STOCKS REPORT
+     ===================================================== */
+
+  function generateReport() {
+
+    var reportActions =
+      document.getElementById(
+        'reportExcelActions'
+      );
+
+    if (reportActions) {
+
+      reportActions.style.display =
+        'none';
+
+    }
+
+
+    var from =
+      document
+        .getElementById('dateFrom')
+        .value;
+
+
+    var to =
+      document
+        .getElementById('dateTo')
+        .value;
+
+
+    if (!from || !to) {
+
+      document
+        .getElementById('reportResult')
+        .innerHTML =
+
+          '<div class="message error" ' +
+          'style="display:block">' +
+
+          'Please select both dates.' +
+
+          '</div>';
+
+      return;
+
+    }
+
+
+    if (from > to) {
+
+      document
+        .getElementById('reportResult')
+        .innerHTML =
+
+          '<div class="message error" ' +
+          'style="display:block">' +
+
+          'Date From cannot be later than Date To.' +
+
+          '</div>';
+
+      return;
+
+    }
+
+
+    document.getElementById('reportResult').style.display = 'block';
+    var visibilityButton = document.getElementById('toggleReportVisibilityButton');
+    if (visibilityButton) visibilityButton.textContent = '🙈 HIDE GENERATED REPORT';
+
+    document
+      .getElementById('reportResult')
+      .innerHTML =
+
+        '<h2 class="reportTitle">' +
+        'Stocks Report' +
+        '</h2>' +
+
+        '<p>' +
+        'Generating accurate report...' +
+        '</p>';
+
+
+    google.script.run
+
+      .withSuccessHandler(function(data) {
+
+        buildReportTable(data);
+
+        var reportActions =
+          document.getElementById(
+            'reportExcelActions'
+          );
+
+        if (reportActions) {
+
+          reportActions.style.display =
+            (
+              data &&
+              data.dates &&
+              data.rows
+            )
+              ? 'block'
+              : 'none';
+
+        }
+
+        var visibilityButton = document.getElementById('toggleReportVisibilityButton');
+        if (visibilityButton) {
+          visibilityButton.style.display =
+            (data && data.dates && data.rows) ? 'inline-block' : 'none';
+          visibilityButton.textContent = '🙈 HIDE GENERATED REPORT';
+        }
+
+        loadStockSummary();
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        document
+          .getElementById('reportResult')
+          .innerHTML =
+
+            '<div class="message error" ' +
+            'style="display:block">' +
+
+            escapeHtml(
+              error.message || error
+            ) +
+
+            '</div>';
+
+      })
+
+      .getReportData(
+        from,
+        to
+      );
+
+  }
+
+
+  /* =====================================================
+     BUILD REPORT TABLE
+     ===================================================== */
+
+  function buildReportTable(report) {
+
+    if (
+      !report ||
+      !report.dates ||
+      !report.rows
+    ) {
+
+      document
+        .getElementById('reportResult')
+        .innerHTML =
+
+          '<h2 class="reportTitle">' +
+          'Stocks Report' +
+          '</h2>' +
+
+          '<p>' +
+          'No stock transactions were found ' +
+          'for the selected date range.' +
+          '</p>';
+
+      return;
+
+    }
+
+
+    var dates =
+      report.dates;
+
+    var rows =
+      report.rows;
+
+    var totals =
+      report.totals;
+
+
+    var html =
+
+      '<h2 class="reportTitle">' +
+      'Stocks Report' +
+      '</h2>' +
+
+      '<div class="reportTable">' +
+
+      '<table class="reportGroupedTable">' +
+
+      '<thead>' +
+
+      '<tr>' +
+
+      '<th rowspan="2">CODE OF THE PRODUCT</th>' +
+
+      '<th rowspan="2">NAME OF THE PRODUCT</th>' +
+
+      '<th rowspan="2">BEGINNING STOCK</th>';
+
+
+    dates.forEach(function(date) {
+
+      html +=
+
+        '<th colspan="2" class="dateHeader">' +
+
+        escapeHtml(
+          date.label
+        ) +
+
+        '</th>';
+
+    });
+
+
+    html +=
+
+      '<th rowspan="2">TOTAL</th>' +
+
+      '</tr>' +
+
+      '<tr>';
+
+
+    dates.forEach(function() {
+
+      html +=
+
+        '<th class="inHeader">IN</th>' +
+
+        '<th class="outHeader">OUT</th>';
+
+    });
+
+
+    html +=
+
+      '</tr>' +
+
+      '</thead>' +
+
+      '<tbody>';
+
+
+    if (rows.length === 0) {
+
+      html +=
+
+        '<tr>' +
+
+        '<td colspan="' +
+
+        (4 + (dates.length * 2)) +
+
+        '" style="text-align:center;">' +
+
+        'No data found.' +
+
+        '</td>' +
+
+        '</tr>';
+
+    } else {
+
+      rows.forEach(function(row) {
+
+        html += '<tr>';
+
+
+        html +=
+
+          '<td>' +
+
+          escapeHtml(
+            row.code || ''
+          ) +
+
+          '</td>';
+
+
+        html +=
+
+          '<td class="productNameCell">' +
+
+          escapeHtml(
+            row.name || ''
+          ) +
+
+          '</td>';
+
+
+        html +=
+
+          '<td>' +
+
+          formatReportNumber(
+            row.beginningStock
+          ) +
+
+          '</td>';
+
+
+        dates.forEach(function(date) {
+
+          var daily =
+
+            row.daily &&
+            row.daily[date.key]
+
+              ? row.daily[date.key]
+
+              : {
+                  in: 0,
+                  out: 0
+                };
+
+
+          html +=
+
+            '<td class="inValue">' +
+
+            formatReportNumber(
+              daily.in
+            ) +
+
+            '</td>';
+
+
+          html +=
+
+            '<td class="outValue">' +
+
+            formatReportNumber(
+              daily.out
+            ) +
+
+            '</td>';
+
+        });
+
+
+        html +=
+
+          '<td class="totalValue">' +
+
+          formatReportNumber(
+            row.total
+          ) +
+
+          '</td>';
+
+
+        html += '</tr>';
+
+      });
+
+    }
+
+
+    html +=
+      '<tr class="reportTotalRow">';
+
+
+    html +=
+      '<td colspan="2">TOTAL</td>';
+
+
+    html +=
+
+      '<td>' +
+
+      formatReportNumber(
+        totals.beginningStock
+      ) +
+
+      '</td>';
+
+
+    dates.forEach(function(date) {
+
+      var daily =
+
+        totals.daily &&
+        totals.daily[date.key]
+
+          ? totals.daily[date.key]
+
+          : {
+              in: 0,
+              out: 0
+            };
+
+
+      html +=
+
+        '<td>' +
+
+        formatReportNumber(
+          daily.in
+        ) +
+
+        '</td>';
+
+
+      html +=
+
+        '<td>' +
+
+        formatReportNumber(
+          daily.out
+        ) +
+
+        '</td>';
+
+    });
+
+
+    html +=
+
+      '<td>' +
+
+      formatReportNumber(
+        totals.total
+      ) +
+
+      '</td>';
+
+
+    html += '</tr>';
+
+
+    html +=
+
+      '</tbody>' +
+
+      '</table>' +
+
+      '</div>';
+
+
+    document
+      .getElementById('reportResult')
+      .innerHTML =
+        html;
+
+  }
+
+
+  function formatReportNumber(value) {
+
+    var number =
+      Number(value) || 0;
+
+
+    if (
+      Number.isInteger(number)
+    ) {
+
+      return number.toLocaleString();
+
+    }
+
+
+    return number.toLocaleString(
+      undefined,
+      {
+        maximumFractionDigits: 2
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     LOAD STOCK SUMMARY
+     ===================================================== */
+
+  function loadStockSummary() {
+
+    google.script.run
+
+      .withSuccessHandler(function(summary) {
+
+        buildStockSummary(summary);
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        console.error(error);
+
+      })
+
+      .getStockSummary();
+
+  }
+
+
+  /* =====================================================
+     BUILD STOCK SUMMARY
+     ===================================================== */
+
+  function buildStockSummary(summary) {
+
+    document
+      .getElementById('noStocksCount')
+      .textContent =
+        summary.noStocks;
+
+
+    document
+      .getElementById('lowStocksCount')
+      .textContent =
+        summary.lowStocks;
+
+
+    document
+      .getElementById('onStocksCount')
+      .textContent =
+        summary.onStocks;
+
+
+    document
+      .getElementById('totalItems')
+      .textContent =
+        summary.totalItems;
+
+
+    document
+      .getElementById('totalStocks')
+      .textContent =
+        summary.totalStocks;
+
+
+    var html =
+
+      '<table>' +
+
+      '<thead>' +
+
+      '<tr>' +
+
+      '<th>CODE</th>' +
+
+      '<th>ITEM</th>' +
+
+      '<th>STOCKS LEFT</th>' +
+
+      '<th>MAXIMUM STOCKS</th>' +
+
+      '<th>STATUS</th>' +
+
+      '</tr>' +
+
+      '</thead>' +
+
+      '<tbody>';
+
+
+    var statusOrder = {
+
+      'NO STOCKS': 1,
+
+      'LOW STOCKS': 2,
+
+      'ON STOCKS': 3
+
+    };
+
+
+    var sortedItems =
+      summary.items
+        .slice()
+        .sort(function(a, b) {
+
+          var orderA =
+            statusOrder[a.status] || 99;
+
+          var orderB =
+            statusOrder[b.status] || 99;
+
+
+          if (
+            orderA !== orderB
+          ) {
+
+            return orderA - orderB;
+
+          }
+
+
+          return String(
+            a.name || ''
+          ).localeCompare(
+
+            String(
+              b.name || ''
+            ),
+
+            undefined,
+
+            {
+              sensitivity: 'base'
+            }
+
+          );
+
+        });
+
+
+    sortedItems.forEach(function(item) {
+
+      var badgeClass =
+        'badgeOn';
+
+
+      if (
+        item.status === 'NO STOCKS'
+      ) {
+
+        badgeClass =
+          'badgeNo';
+
+      } else if (
+        item.status === 'LOW STOCKS'
+      ) {
+
+        badgeClass =
+          'badgeLow';
+
+      }
+
+
+      html +=
+
+        '<tr>' +
+
+        '<td>' +
+
+        escapeHtml(
+          item.code
+        ) +
+
+        '</td>' +
+
+        '<td>' +
+
+        escapeHtml(
+          item.name
+        ) +
+
+        '</td>' +
+
+        '<td>' +
+
+        escapeHtml(
+          item.stocks
+        ) +
+
+        '</td>' +
+
+        '<td>' +
+
+        escapeHtml(
+          item.maxStock
+        ) +
+
+        '</td>' +
+
+        '<td>' +
+
+        '<span class="statusBadge ' +
+        badgeClass +
+        '">' +
+
+        escapeHtml(
+          item.status
+        ) +
+
+        '</span>' +
+
+        '</td>' +
+
+        '</tr>';
+
+    });
+
+
+    html +=
+
+      '</tbody>' +
+
+      '</table>';
+
+
+    document
+      .getElementById('stockStatusTable')
+      .innerHTML =
+        html;
+
+  }
+
+
+  /* =====================================================
+     GO TO STOCK STATUS PART
+     ===================================================== */
+
+  function showStockStatusPart(status) {
+
+    var section =
+      document.getElementById(
+        'stockStatusTable'
+      );
+
+
+    if (!section) return;
+
+
+    var card =
+      section.closest(
+        '.itemStatus'
+      );
+
+
+    if (card) {
+
+      card.scrollIntoView({
+
+        behavior: 'smooth',
+
+        block: 'start'
+
+      });
+
+    }
+
+
+    var rows =
+      section.querySelectorAll(
+        'tbody tr'
+      );
+
+
+    rows.forEach(function(row) {
+
+      var badge =
+        row.querySelector(
+          '.statusBadge'
+        );
+
+
+      if (!badge) return;
+
+
+      row.style.display =
+        badge.textContent.trim() === status
+          ? ''
+          : 'none';
+
+    });
+
+  }
+
+
+  /* =====================================================
+     SAVE STOCKS REPORT TO EXCEL
+     ===================================================== */
+
+  function saveReportToExcel() {
+
+    var table =
+      document.querySelector(
+        '#reportResult table'
+      );
+
+
+    if (!table) {
+
+      alert(
+        'Please generate the Stocks Report first.'
+      );
+
+      return;
+
+    }
+
+
+    downloadTableAsExcel(
+
+      table,
+
+      'Stocks_Report_' +
+      getExcelDateStamp() +
+      '.xls'
+
+    );
+
+  }
+
+
+  /* =====================================================
+     SAVE ITEM STOCK STATUS TO EXCEL
+     ===================================================== */
+
+  function saveItemStockStatusToExcel() {
+
+    var table =
+      document.querySelector(
+        '#stockStatusTable table'
+      );
+
+
+    if (!table) {
+
+      alert(
+        'Item Stock Status is not available yet.'
+      );
+
+      return;
+
+    }
+
+
+    downloadTableAsExcel(
+
+      table,
+
+      'Item_Stock_Status_' +
+      getExcelDateStamp() +
+      '.xls'
+
+    );
+
+  }
+
+
+  /* =====================================================
+     EXCEL DOWNLOAD HELPER
+     ===================================================== */
+
+  function downloadTableAsExcel(
+    table,
+    fileName
+  ) {
+
+    var tableClone =
+      table.cloneNode(true);
+
+
+    tableClone
+      .querySelectorAll('tr')
+      .forEach(function(row) {
+
+        row.style.display = '';
+
+      });
+
+
+    tableClone
+      .querySelectorAll('*')
+      .forEach(function(element) {
+
+        element.style.display = '';
+
+      });
+
+
+    var html =
+
+      '<html xmlns:x="urn:schemas-microsoft-com:office:excel">' +
+
+      '<head>' +
+
+      '<meta charset="UTF-8">' +
+
+      '<style>' +
+
+      'table{border-collapse:collapse;}' +
+
+      'th,td{border:1px solid #000;padding:6px;}' +
+
+      'th{font-weight:bold;}' +
+
+      '</style>' +
+
+      '</head>' +
+
+      '<body>' +
+
+      tableClone.outerHTML +
+
+      '</body>' +
+
+      '</html>';
+
+
+    var blob =
+      new Blob(
+
+        ['\ufeff' + html],
+
+        {
+          type:
+            'application/vnd.ms-excel;charset=utf-8;'
+        }
+
+      );
+
+
+    var url =
+      URL.createObjectURL(blob);
+
+
+    var link =
+      document.createElement('a');
+
+
+    link.href =
+      url;
+
+
+    link.download =
+      fileName;
+
+
+    document
+      .body
+      .appendChild(link);
+
+
+    link.click();
+
+
+    document
+      .body
+      .removeChild(link);
+
+
+    setTimeout(function() {
+
+      URL.revokeObjectURL(url);
+
+    }, 1000);
+
+  }
+
+
+  /* =====================================================
+     EXCEL DATE
+     ===================================================== */
+
+  function getExcelDateStamp() {
+
+    var now =
+      new Date();
+
+
+    var year =
+      now.getFullYear();
+
+
+    var month =
+      String(
+        now.getMonth() + 1
+      ).padStart(2, '0');
+
+
+    var day =
+      String(
+        now.getDate()
+      ).padStart(2, '0');
+
+
+    return (
+
+      year +
+      '-' +
+      month +
+      '-' +
+      day
+
+    );
+
+  }
+
+
+  /* =====================================================
+     ESCAPE HTML
+     ===================================================== */
+
+  function escapeHtml(value) {
+
+    return String(
+
+      value == null
+        ? ''
+        : value
+
+    )
+
+      .replace(
+        /&/g,
+        '&amp;'
+      )
+
+      .replace(
+        /</g,
+        '&lt;'
+      )
+
+      .replace(
+        />/g,
+        '&gt;'
+      )
+
+      .replace(
+        /"/g,
+        '&quot;'
+      )
+
+      .replace(
+        /'/g,
+        '&#039;'
+      );
+
+  }
+
+
+  /* =====================================================
+     START
+     ===================================================== */
+
+  window.onload = function() {
+
+    loadTheme();
+
+    loadItems();
+
+    loadDashboardImage();
+
+    showHomePage();
+
+  };
+
+</script>
+
 </body>
+
 </html>
