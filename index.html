@@ -2118,8 +2118,9 @@
     }
 
     window.addEventListener('message', function(event) {
-      // Accept messages only from this page's hidden response iframe.
-      if (event.source !== iframe.contentWindow || !event.data || !event.data.requestId) return;
+      // Apps Script may wrap HtmlService responses in an additional sandbox frame.
+      // Match the one-time request ID instead of requiring a specific frame source.
+      if (!event.data || !event.data.requestId) return;
       var pending = pendingPosts[event.data.requestId];
       if (!pending) return;
       delete pendingPosts[event.data.requestId];
@@ -4022,13 +4023,17 @@
     var identifier = selectedBarcodeItem.code || selectedBarcodeItem.name;
     google.script.run
       .withSuccessHandler(function(result) {
-        button.disabled = false;
-        button.textContent = '💾 SAVE BARCODE';
+        // Confirm the successful save before resetting for the next registration.
+        button.disabled = true;
+        button.textContent = '✓ SAVED!';
         showBarcodeMessage(result && result.message ? result.message : 'Barcode saved successfully.', true);
         // Refresh the item list used by the rest of the app.
         google.script.run.withSuccessHandler(function(items) {
           catalogItems = Array.isArray(items) ? items : [];
         }).getItemList();
+        window.setTimeout(function() {
+          resetBarcodeForm();
+        }, 3000);
       })
       .withFailureHandler(function(error) {
         button.disabled = false;
