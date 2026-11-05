@@ -1365,6 +1365,51 @@
       .barcodeSaveActions { grid-template-columns: 1fr; }
     }
 
+  
+    .entryBarcodePanel {
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      background: #eff6ff;
+    }
+    .entryBarcodeActions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .entryBarcodeActions .btn { margin: 0; }
+    .entryCameraWrap {
+      display: none; margin-top: 14px; padding: 12px;
+      background: #0f172a; border-radius: 14px; text-align: center;
+    }
+    .entryCameraWrap video {
+      width: 100% !important; max-height: 420px !important;
+      object-fit: contain; background: #000; border-radius: 9px;
+    }
+    #entryBarcodeScanner { width: 100%; max-width: 620px; margin: 0 auto; }
+    #entryBarcodeScanner__scan_region { min-height: 220px; }
+    #entryBarcodeScanner__dashboard { color: #fff; }
+    .entryCameraHint { color: #e2e8f0; font-size: 13px; padding: 10px 4px 2px; }
+    .quantityScanModal {
+      display: none; position: fixed; inset: 0; z-index: 10020;
+      background: rgba(15,23,42,.72); align-items: center; justify-content: center;
+      padding: 18px;
+    }
+    .quantityScanCard {
+      width: 100%; max-width: 440px; background: #fff; color: #1f2937;
+      border-radius: 18px; padding: 24px; box-shadow: 0 18px 55px rgba(0,0,0,.3);
+    }
+    .quantityScanCard h2 { margin: 0 0 8px; color: #1d4ed8; }
+    .quantityScanCard .scanItemName {
+      padding: 12px; margin: 12px 0; border-radius: 9px;
+      background: #eff6ff; font-weight: bold;
+    }
+    .quantityScanCard label { margin-top: 12px; }
+    .quantityScanActions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    body.darkMode .entryBarcodePanel { background: #172554; border-color: #1d4ed8; }
+    body.darkMode .quantityScanCard { background: #1e293b; color: #e5e7eb; }
+    body.darkMode .quantityScanCard .scanItemName { background: #172554; color: #dbeafe; }
+    @media (max-width: 600px) {
+      .entryBarcodeActions, .quantityScanActions { grid-template-columns: 1fr; }
+    }
+
   </style>
 
 </head>
@@ -1592,6 +1637,19 @@
 
 
       <p>Search an item by name. The code and remaining stock will fill automatically. The form starts with 10 rows.</p>
+      <div class="entryBarcodePanel">
+        <h3 style="margin:0 0 8px;">📷 Barcode Stock Entry</h3>
+        <p style="margin:0 0 14px;">Open the camera, scan each item, enter its quantity, then continue scanning the next item.</p>
+        <div class="entryBarcodeActions">
+          <button type="button" class="btn btnGenerate" id="entryCameraButton" onclick="toggleEntryBarcodeCamera()">📷 OPEN CAMERA</button>
+          <button type="button" class="btn btnBack" id="entryCameraCloseButton" onclick="stopEntryBarcodeCamera()">✕ CLOSE CAMERA</button>
+        </div>
+        <div id="entryCameraWrap" class="entryCameraWrap">
+          <div id="entryBarcodeScanner"></div>
+          <div class="entryCameraHint">Point the camera at the barcode. The quantity popup will appear after a match.</div>
+        </div>
+        <div id="entryBarcodeMessage" class="message" style="display:none;"></div>
+      </div>
       <datalist id="itemList"></datalist>
       <div class="entryTableWrapper">
         <table class="entryTable">
@@ -1983,6 +2041,23 @@
   </div>
 </div>
 
+<!-- BARCODE SCAN QUANTITY POPUP -->
+<div id="entryQuantityModal" class="quantityScanModal">
+  <div class="quantityScanCard" role="dialog" aria-modal="true" aria-labelledby="entryQuantityTitle">
+    <h2 id="entryQuantityTitle">Enter Item Quantity</h2>
+    <p>Barcode successfully matched.</p>
+    <div id="entryQuantityItemName" class="scanItemName"></div>
+    <label for="entryScannedQuantity">Quantity</label>
+    <input type="number" id="entryScannedQuantity" min="0.001" step="any" placeholder="Enter quantity">
+    <label for="entryScannedExpiry">Expiration Date (optional)</label>
+    <input type="date" id="entryScannedExpiry">
+    <div class="quantityScanActions">
+      <button type="button" class="btn btnIn" onclick="confirmEntryScannedQuantity()">✓ CONFIRM &amp; SCAN NEXT</button>
+      <button type="button" class="btn btnBack" onclick="cancelEntryScannedQuantity()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <!-- STOCK IN TO STOCK OUT CONFIRMATION -->
 <div id="stockOutConfirmModal" class="stockOutModal" style="display:none;">
   <div class="stockOutModalCard" role="dialog" aria-modal="true" aria-labelledby="stockOutModalTitle">
@@ -2333,6 +2408,12 @@
 
   function hideAllPages() {
 
+    if (typeof stopEntryBarcodeCamera === 'function') stopEntryBarcodeCamera();
+    var quantityModal = document.getElementById('entryQuantityModal');
+    if (quantityModal) quantityModal.style.display = 'none';
+    pendingScannedCatalogItem = null;
+    entryBarcodeHandling = false;
+
     document
       .getElementById('homePage')
       .classList.remove('active');
@@ -2508,6 +2589,179 @@
       codeField.value = '';
       remainingField.value = '—';
     }
+  }
+
+
+  // Barcode scanner dedicated to the Stock Entry page.
+  var entryBarcodeScanner = null;
+  var entryBarcodeStopPromise = Promise.resolve();
+  var entryBarcodeScanActive = false;
+  var entryBarcodeStarting = false;
+  var pendingScannedCatalogItem = null;
+  var entryBarcodeHandling = false;
+
+  function showEntryBarcodeMessage(message, success) {
+    var box = document.getElementById('entryBarcodeMessage');
+    if (!box) return;
+    box.textContent = message;
+    box.className = 'message ' + (success ? 'success' : 'error');
+    box.style.display = 'block';
+  }
+
+  function toggleEntryBarcodeCamera() {
+    if (entryBarcodeScanActive || entryBarcodeStarting) {
+      stopEntryBarcodeCamera();
+      return;
+    }
+    startEntryBarcodeCamera();
+  }
+
+  function startEntryBarcodeCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showEntryBarcodeMessage('Camera access requires HTTPS. Open the secure GitHub Pages address and allow camera permission.', false);
+      return;
+    }
+    if (typeof Html5Qrcode === 'undefined') {
+      showEntryBarcodeMessage('The barcode scanner library could not load. Check your internet connection and refresh the page.', false);
+      return;
+    }
+
+    var wrap = document.getElementById('entryCameraWrap');
+    var button = document.getElementById('entryCameraButton');
+    wrap.style.display = 'block';
+    button.disabled = true;
+    button.textContent = '📷 STARTING CAMERA...';
+    entryBarcodeStarting = true;
+
+    try {
+      entryBarcodeScanner = new Html5Qrcode('entryBarcodeScanner');
+      entryBarcodeScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 280, height: 140 }, aspectRatio: 1.7777778, rememberLastUsedCamera: true },
+        function(decodedText) {
+          if (!entryBarcodeScanActive || entryBarcodeHandling) return;
+          var scanned = String(decodedText || '').trim();
+          if (!scanned) return;
+
+          var match = catalogItems.find(function(item) {
+            return String(item.barcode || '').trim().toLowerCase() === scanned.toLowerCase();
+          });
+
+          if (!match) {
+            entryBarcodeHandling = true;
+            showEntryBarcodeMessage('Barcode "' + scanned + '" is not registered to an item. Register it first or scan another barcode.', false);
+            window.setTimeout(function() { entryBarcodeHandling = false; }, 1400);
+            return;
+          }
+
+          entryBarcodeHandling = true;
+          pendingScannedCatalogItem = match;
+          stopEntryBarcodeCamera();
+          document.getElementById('entryQuantityItemName').textContent =
+            match.name + (match.code ? ' | Code: ' + match.code : '');
+          document.getElementById('entryScannedQuantity').value = '';
+          document.getElementById('entryScannedExpiry').value = '';
+          document.getElementById('entryQuantityModal').style.display = 'flex';
+          window.setTimeout(function() { document.getElementById('entryScannedQuantity').focus(); }, 100);
+          showEntryBarcodeMessage('Barcode detected: ' + scanned, true);
+        },
+        function() {}
+      ).then(function() {
+        entryBarcodeStarting = false;
+        entryBarcodeScanActive = true;
+        button.disabled = false;
+        button.textContent = '📷 CAMERA ACTIVE';
+      }).catch(function(error) {
+        entryBarcodeStarting = false;
+        entryBarcodeScanActive = false;
+        button.disabled = false;
+        button.textContent = '📷 OPEN CAMERA';
+        wrap.style.display = 'none';
+        showEntryBarcodeMessage('Unable to start camera: ' + (error && error.message ? error.message : error), false);
+        entryBarcodeScanner = null;
+      });
+    } catch (error) {
+      entryBarcodeStarting = false;
+      entryBarcodeScanActive = false;
+      button.disabled = false;
+      button.textContent = '📷 OPEN CAMERA';
+      wrap.style.display = 'none';
+      entryBarcodeScanner = null;
+      showEntryBarcodeMessage('Unable to initialize scanner: ' + (error.message || error), false);
+    }
+  }
+
+  function stopEntryBarcodeCamera() {
+    entryBarcodeScanActive = false;
+    entryBarcodeStarting = false;
+    var wrap = document.getElementById('entryCameraWrap');
+    var button = document.getElementById('entryCameraButton');
+    var scanner = entryBarcodeScanner;
+    entryBarcodeScanner = null;
+
+    if (scanner) {
+      var stopPromise;
+      try {
+        stopPromise = scanner.isScanning ? scanner.stop() : Promise.resolve();
+      } catch (e) {
+        stopPromise = Promise.resolve();
+      }
+      entryBarcodeStopPromise = Promise.resolve(stopPromise).catch(function() {}).then(function() {
+        try { scanner.clear(); } catch (e) {}
+      });
+    }
+    if (wrap) wrap.style.display = 'none';
+    if (button) {
+      button.disabled = false;
+      button.textContent = '📷 OPEN CAMERA';
+    }
+    return entryBarcodeStopPromise;
+  }
+
+  function confirmEntryScannedQuantity() {
+    if (!pendingScannedCatalogItem) return;
+    var quantityField = document.getElementById('entryScannedQuantity');
+    var quantity = Number(quantityField.value);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      quantityField.focus();
+      showEntryBarcodeMessage('Enter a valid quantity greater than zero.', false);
+      return;
+    }
+
+    var item = pendingScannedCatalogItem;
+    var row = Array.from(document.querySelectorAll('.batchRow')).find(function(r) {
+      return !r.querySelector('.batchItem').value.trim() &&
+             !r.querySelector('.batchQty').value.trim();
+    });
+    if (!row) {
+      var before = document.querySelectorAll('.batchRow').length;
+      if (before >= 250) {
+        showEntryBarcodeMessage('The maximum is 250 item rows per submission.', false);
+        return;
+      }
+      addBatchRows(1);
+      row = document.querySelectorAll('.batchRow')[document.querySelectorAll('.batchRow').length - 1];
+    }
+
+    row.querySelector('.batchItem').value = item.name;
+    row.dataset.itemName = String(item.name);
+    row.querySelector('.entryCode').value = String(item.code || '');
+    row.querySelector('.entryRemaining').value = String(Number(item.stocksLeft) || 0);
+    row.querySelector('.batchQty').value = String(quantity);
+    row.querySelector('.batchExpiry').value = document.getElementById('entryScannedExpiry').value || '';
+
+    document.getElementById('entryQuantityModal').style.display = 'none';
+    pendingScannedCatalogItem = null;
+    entryBarcodeHandling = false;
+    showEntryBarcodeMessage('Added ' + item.name + ' — quantity: ' + quantity + '. Ready for the next barcode.', true);
+    Promise.resolve(entryBarcodeStopPromise).then(startEntryBarcodeCamera);
+  }
+
+  function cancelEntryScannedQuantity() {
+    document.getElementById('entryQuantityModal').style.display = 'none';
+    pendingScannedCatalogItem = null;
+    entryBarcodeHandling = false;
+    Promise.resolve(entryBarcodeStopPromise).then(startEntryBarcodeCamera);
   }
 
   var pendingStockOut = null;
