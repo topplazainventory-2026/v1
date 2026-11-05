@@ -1332,6 +1332,33 @@
     }
     .stockOutModalCard .reasonHint { font-size: 13px; color: #64748b; margin: -8px 0 12px; }
 
+
+    /* =====================================================
+       ITEM BARCODE REGISTRATION
+       ===================================================== */
+    .barcodeRegistrationCard { max-width: 760px; margin-left: auto; margin-right: auto; }
+    .barcodeRegistrationCard > p { line-height: 1.6; color: #64748b; }
+    .barcodeSelectedItem {
+      margin-top: 10px; padding: 12px 14px; border-radius: 9px;
+      background: #ecfeff; border-left: 5px solid #0891b2; color: #155e75;
+      font-weight: bold;
+    }
+    .barcodeCameraActions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .barcodeCameraActions .btn { margin: 0; }
+    .barcodeCameraWrap {
+      margin-top: 16px; padding: 12px; background: #0f172a; border-radius: 14px;
+      overflow: hidden; text-align: center;
+    }
+    .barcodeCameraWrap video { width: 100%; max-height: 420px; object-fit: contain; background: #000; border-radius: 9px; }
+    .barcodeCameraHint { color: #e2e8f0; font-size: 13px; padding: 10px 4px 2px; }
+    .barcodeSaveActions { margin-top: 20px; }
+    body.darkMode .barcodeSelectedItem { background: #083344; color: #cffafe; border-left-color: #22d3ee; }
+    body.darkMode .barcodeRegistrationCard > p { color: #cbd5e1; }
+    @media (max-width: 600px) {
+      .barcodeCameraActions { grid-template-columns: 1fr; }
+      .barcodeSaveActions { grid-template-columns: 1fr; }
+    }
+
   </style>
 
 </head>
@@ -1483,6 +1510,12 @@
           <span class="bigIcon">⏳</span>
           <span class="buttonTitle">EXPIRATION DATE MONITORING</span>
           <span class="buttonText">Find earliest-to-expire items and print the list</span>
+        </button>
+
+        <button class="homeButton reportHomeButton" style="background:linear-gradient(135deg,#0891b2,#155e75);" onclick="showBarcodeRegistration()">
+          <span class="bigIcon">▦</span>
+          <span class="buttonTitle">BARCODE REGISTRATION</span>
+          <span class="buttonText">Register or update an item's barcode</span>
         </button>
 
       </div>
@@ -1890,6 +1923,60 @@
   </div>
 </div>
 
+
+<!-- =======================================================
+     ITEM BARCODE REGISTRATION PAGE
+     Added as a separate page; existing pages remain unchanged.
+     ======================================================= -->
+<div id="barcodePage" class="page">
+  <div class="container">
+    <div class="header">
+      <h1>TOP PLAZA STOCK MANAGEMENT SYSTEM</h1>
+      <p>Item Barcode Registration Form</p>
+    </div>
+
+    <div class="topNavigation">
+      <button class="navButton" onclick="showHomePage()">🏠 MAIN</button>
+      <button class="navButton" onclick="showEntryForm()">📝 ENTRY FORM</button>
+      <button class="navButton" onclick="showReportForm()">📊 STOCKS REPORT</button>
+      <button class="navButton" onclick="showExpirationMonitoring()">⏳ EXPIRATION DATE</button>
+    </div>
+
+    <div class="card barcodeRegistrationCard">
+      <h2>▦ Item Barcode Registration Form</h2>
+      <p>Search and select an item, scan its barcode using your device camera, then save it to the <b>BARCODE</b> column in the <b>Items</b> sheet.</p>
+
+      <label for="barcodeItemSearch">Search Item</label>
+      <input type="text" id="barcodeItemSearch" list="barcodeItemSuggestions"
+             placeholder="Type item code or item name..." autocomplete="off"
+             oninput="handleBarcodeItemSearch()">
+      <datalist id="barcodeItemSuggestions"></datalist>
+      <div id="barcodeSelectedItem" class="barcodeSelectedItem" style="display:none;"></div>
+
+      <label for="barcodeValue">Barcode</label>
+      <input type="text" id="barcodeValue" placeholder="Scan with camera or enter barcode manually"
+             autocomplete="off" inputmode="numeric">
+
+      <div class="barcodeCameraActions">
+        <button type="button" class="btn btnGenerate" id="barcodeCameraButton" onclick="toggleBarcodeCamera()">📷 OPEN CAMERA</button>
+        <button type="button" class="btn btnBack" onclick="clearBarcodeCamera()">STOP CAMERA</button>
+      </div>
+
+      <div id="barcodeCameraWrap" class="barcodeCameraWrap" style="display:none;">
+        <video id="barcodeVideo" autoplay muted playsinline></video>
+        <div class="barcodeCameraHint">Point the camera at the item's barcode. Keep the barcode inside the camera view.</div>
+      </div>
+
+      <div id="barcodeMessage" class="message"></div>
+
+      <div class="buttons barcodeSaveActions">
+        <button type="button" class="btn btnIn" id="saveBarcodeButton" onclick="saveRegisteredBarcode()">💾 SAVE BARCODE</button>
+        <button type="button" class="btn btnBack" onclick="resetBarcodeForm()">CLEAR FORM</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- STOCK IN TO STOCK OUT CONFIRMATION -->
 <div id="stockOutConfirmModal" class="stockOutModal" style="display:none;">
   <div class="stockOutModalCard" role="dialog" aria-modal="true" aria-labelledby="stockOutModalTitle">
@@ -2047,7 +2134,8 @@
       getExpirationMonitoring: function(from, to, item) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getExpirationMonitoring', [from, to, item], s, f); },
       getReportData: function(from, to) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getReportData', [from, to], s, f); },
       getStockSummary: function() { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getStockSummary', [], s, f); },
-      saveEntries: function(entries, status, requester, department) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveEntries', [entries, status, requester, department], s, f); }
+      saveEntries: function(entries, status, requester, department) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveEntries', [entries, status, requester, department], s, f); },
+      saveItemBarcode: function(itemIdentifier, barcode) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveItemBarcode', [itemIdentifier, barcode], s, f); }
     };
 
     window.google = window.google || {};
@@ -2248,6 +2336,7 @@
       .getElementById('reportPage')
       .classList.remove('active');
     document.getElementById('expirationPage').classList.remove('active');
+    document.getElementById('barcodePage').classList.remove('active');
 
   }
 
@@ -3747,6 +3836,224 @@
   /* =====================================================
      START
      ===================================================== */
+
+
+  /* =====================================================
+     ITEM BARCODE REGISTRATION
+     ===================================================== */
+  var barcodeCameraStream = null;
+  var barcodeDetector = null;
+  var barcodeScanActive = false;
+  var barcodeScanFrame = null;
+  var selectedBarcodeItem = null;
+
+  function showBarcodeRegistration() {
+    hideAllPages();
+    document.getElementById('barcodePage').classList.add('active');
+    stopBarcodeCamera();
+    resetBarcodeForm();
+    loadBarcodeItemSuggestions();
+  }
+
+  function loadBarcodeItemSuggestions() {
+    var fill = function(items) {
+      catalogItems = Array.isArray(items) ? items : [];
+      var list = document.getElementById('barcodeItemSuggestions');
+      list.innerHTML = '';
+      catalogItems.forEach(function(item) {
+        if (!item || !item.name) return;
+        var option = document.createElement('option');
+        option.value = String(item.name);
+        list.appendChild(option);
+        if (item.code) {
+          var codeOption = document.createElement('option');
+          codeOption.value = String(item.code);
+          list.appendChild(codeOption);
+        }
+      });
+    };
+
+    if (Array.isArray(catalogItems) && catalogItems.length) {
+      fill(catalogItems);
+    } else {
+      google.script.run
+        .withSuccessHandler(fill)
+        .withFailureHandler(function(error) {
+          showBarcodeMessage(error && error.message ? error.message : 'Unable to load the item list.', false);
+        })
+        .getItemList();
+    }
+  }
+
+  function handleBarcodeItemSearch() {
+    var value = String(document.getElementById('barcodeItemSearch').value || '').trim().toLowerCase();
+    var selectedBox = document.getElementById('barcodeSelectedItem');
+    selectedBarcodeItem = null;
+    selectedBox.style.display = 'none';
+    if (!value) return;
+
+    var matches = catalogItems.filter(function(item) {
+      return String(item.name || '').trim().toLowerCase() === value ||
+             String(item.code || '').trim().toLowerCase() === value;
+    });
+
+    if (matches.length === 1) {
+      selectedBarcodeItem = matches[0];
+      selectedBox.textContent = 'Selected item: ' + selectedBarcodeItem.name +
+        (selectedBarcodeItem.code ? ' | Code: ' + selectedBarcodeItem.code : '');
+      selectedBox.style.display = 'block';
+    }
+  }
+
+  function toggleBarcodeCamera() {
+    if (barcodeCameraStream) {
+      stopBarcodeCamera();
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showBarcodeMessage('Camera access is not available. Open this page using HTTPS in a supported browser, or enter the barcode manually.', false);
+      return;
+    }
+    if (!('BarcodeDetector' in window)) {
+      showBarcodeMessage('Automatic barcode scanning is not supported by this browser. You can still enter the barcode manually in the Barcode field.', false);
+      return;
+    }
+
+    var formats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf', 'qr_code', 'codabar', 'data_matrix'];
+    var detectorPromise = window.BarcodeDetector.getSupportedFormats
+      ? window.BarcodeDetector.getSupportedFormats().then(function(supported) {
+          return new BarcodeDetector({formats: formats.filter(function(format) {
+            return supported.indexOf(format) !== -1;
+          })});
+        })
+      : Promise.resolve(new BarcodeDetector());
+
+    detectorPromise.then(function(detector) {
+      barcodeDetector = detector;
+      return navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+    }).then(function(stream) {
+      barcodeCameraStream = stream;
+      var video = document.getElementById('barcodeVideo');
+      video.srcObject = stream;
+      document.getElementById('barcodeCameraWrap').style.display = 'block';
+      document.getElementById('barcodeCameraButton').textContent = '📷 CAMERA ACTIVE';
+      barcodeScanActive = true;
+      return video.play();
+    }).then(function() {
+      scanBarcodeFrame();
+    }).catch(function(error) {
+      stopBarcodeCamera();
+      showBarcodeMessage('Unable to open the camera: ' + (error && error.message ? error.message : error) +
+        '. Check camera permission or enter the barcode manually.', false);
+    });
+  }
+
+  function scanBarcodeFrame() {
+    if (!barcodeScanActive || !barcodeDetector) return;
+    var video = document.getElementById('barcodeVideo');
+    if (video && video.readyState >= 2) {
+      barcodeDetector.detect(video).then(function(codes) {
+        if (!barcodeScanActive || !codes || !codes.length) return;
+        var rawValue = String(codes[0].rawValue || '').trim();
+        if (rawValue) {
+          document.getElementById('barcodeValue').value = rawValue;
+          showBarcodeMessage('Barcode detected. Review it, then click SAVE BARCODE.', true);
+          stopBarcodeCamera();
+          return;
+        }
+      }).catch(function(error) {
+        console.warn('Barcode scan error:', error);
+      }).finally(function() {
+        if (barcodeScanActive) barcodeScanFrame = window.requestAnimationFrame(scanBarcodeFrame);
+      });
+    } else {
+      barcodeScanFrame = window.requestAnimationFrame(scanBarcodeFrame);
+    }
+  }
+
+  function stopBarcodeCamera() {
+    barcodeScanActive = false;
+    if (barcodeScanFrame) {
+      window.cancelAnimationFrame(barcodeScanFrame);
+      barcodeScanFrame = null;
+    }
+    if (barcodeCameraStream) {
+      barcodeCameraStream.getTracks().forEach(function(track) { track.stop(); });
+      barcodeCameraStream = null;
+    }
+    var video = document.getElementById('barcodeVideo');
+    if (video) video.srcObject = null;
+    var wrap = document.getElementById('barcodeCameraWrap');
+    if (wrap) wrap.style.display = 'none';
+    var button = document.getElementById('barcodeCameraButton');
+    if (button) button.textContent = '📷 OPEN CAMERA';
+  }
+
+  function clearBarcodeCamera() {
+    stopBarcodeCamera();
+  }
+
+  function saveRegisteredBarcode() {
+    handleBarcodeItemSearch();
+    var barcode = String(document.getElementById('barcodeValue').value || '').trim();
+
+    if (!selectedBarcodeItem) {
+      showBarcodeMessage('Please search and select an item from the suggested item list.', false);
+      return;
+    }
+    if (!barcode) {
+      showBarcodeMessage('Please scan or enter the barcode before saving.', false);
+      return;
+    }
+
+    stopBarcodeCamera();
+    var button = document.getElementById('saveBarcodeButton');
+    button.disabled = true;
+    button.textContent = 'SAVING...';
+
+    var identifier = selectedBarcodeItem.code || selectedBarcodeItem.name;
+    google.script.run
+      .withSuccessHandler(function(result) {
+        button.disabled = false;
+        button.textContent = '💾 SAVE BARCODE';
+        showBarcodeMessage(result && result.message ? result.message : 'Barcode saved successfully.', true);
+        // Refresh the item list used by the rest of the app.
+        google.script.run.withSuccessHandler(function(items) {
+          catalogItems = Array.isArray(items) ? items : [];
+        }).getItemList();
+      })
+      .withFailureHandler(function(error) {
+        button.disabled = false;
+        button.textContent = '💾 SAVE BARCODE';
+        showBarcodeMessage(error && error.message ? error.message : 'Unable to save the barcode.', false);
+      })
+      .saveItemBarcode(identifier, barcode);
+  }
+
+  function resetBarcodeForm() {
+    stopBarcodeCamera();
+    selectedBarcodeItem = null;
+    document.getElementById('barcodeItemSearch').value = '';
+    document.getElementById('barcodeValue').value = '';
+    document.getElementById('barcodeSelectedItem').style.display = 'none';
+    document.getElementById('barcodeMessage').style.display = 'none';
+    var button = document.getElementById('saveBarcodeButton');
+    if (button) {
+      button.disabled = false;
+      button.textContent = '💾 SAVE BARCODE';
+    }
+  }
+
+  function showBarcodeMessage(message, success) {
+    var box = document.getElementById('barcodeMessage');
+    box.textContent = message;
+    box.className = 'message ' + (success ? 'success' : 'error');
+    box.style.display = 'block';
+  }
 
   window.onload = function() {
 
