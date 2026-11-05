@@ -2142,7 +2142,9 @@
       getReportData: function(from, to) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getReportData', [from, to], s, f); },
       getStockSummary: function() { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('getStockSummary', [], s, f); },
       saveEntries: function(entries, status, requester, department) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveEntries', [entries, status, requester, department], s, f); },
-      saveItemBarcode: function(itemIdentifier, barcode) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeWrite('saveItemBarcode', [itemIdentifier, barcode], s, f); }
+      // Use JSONP for barcode registration so the browser receives the
+      // Apps Script success/error callback directly (no hidden-iframe POST wait).
+      saveItemBarcode: function(itemIdentifier, barcode) { var s = successHandler, f = failureHandler; successHandler = failureHandler = null; invokeRead('saveItemBarcode', [itemIdentifier, barcode], s, f); }
     };
 
     window.google = window.google || {};
@@ -4023,10 +4025,16 @@
     var identifier = selectedBarcodeItem.code || selectedBarcodeItem.name;
     google.script.run
       .withSuccessHandler(function(result) {
-        // Confirm the successful save before resetting for the next registration.
+        // Only show SAVED after Apps Script confirms the write completed.
+        if (!result || result.success !== true) {
+          button.disabled = false;
+          button.textContent = '💾 SAVE BARCODE';
+          showBarcodeMessage('The server did not confirm the barcode save. Please check the Items sheet before trying again.', false);
+          return;
+        }
         button.disabled = true;
         button.textContent = '✓ SAVED!';
-        showBarcodeMessage(result && result.message ? result.message : 'Barcode saved successfully.', true);
+        showBarcodeMessage(result.message || 'Barcode saved successfully.', true);
         // Refresh the item list used by the rest of the app.
         google.script.run.withSuccessHandler(function(items) {
           catalogItems = Array.isArray(items) ? items : [];
