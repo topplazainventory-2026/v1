@@ -2729,7 +2729,7 @@
       entryBarcodeScanActive = true;
 
       scanner.start(
-        { facingMode: { ideal: 'environment' } },
+        { facingMode: 'environment' },
         {
           fps: 20,
           // Use almost the full camera frame: narrow QR-style boxes can crop
@@ -4338,7 +4338,7 @@
         verbose: false
       });
       barcodeScanner.start(
-        { facingMode: { ideal: 'environment' } },
+        { facingMode: 'environment' },
         {
           fps: 20,
           qrbox: function(viewWidth, viewHeight) {
