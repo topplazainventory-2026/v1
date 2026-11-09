@@ -2493,13 +2493,12 @@
   // zeros are meaningful. Remove scanner-added whitespace/control characters.
   function normalizeBarcodeValue(value) {
     return String(value == null ? '' : value)
-      .replace(/[\\u0000-\\u001F\\u007F]/g, '')
-      .replace(/\\u00a0/g, ' ')
+      .replace(/[\u0000-\u001F\u007F]/g, '')
+      .replace(/\u00a0/g, ' ')
       .trim()
-      .replace(/\\s+/g, '')
+      .replace(/\s+/g, '')
       .toLocaleLowerCase();
   }
-
   function loadItems() {
     google.script.run
       .withSuccessHandler(function(items) {
@@ -2636,6 +2635,14 @@
       showEntryBarcodeMessage('The barcode scanner library could not load. Check your internet connection and refresh the page.', false);
       return;
     }
+    if (typeof Html5QrcodeSupportedFormats === 'undefined') {
+      showEntryBarcodeMessage('The barcode scanner did not finish loading. Refresh the page and try again.', false);
+      return;
+    }
+    if (!Array.isArray(catalogItems) || !catalogItems.length) {
+      showEntryBarcodeMessage('The item catalog is still loading or is empty. Wait for the item list to load, then try again.', false);
+      return;
+    }
 
     var wrap = document.getElementById('entryCameraWrap');
     var button = document.getElementById('entryCameraButton');
@@ -2644,56 +2651,107 @@
     button.textContent = '📷 STARTING CAMERA...';
     entryBarcodeStarting = true;
 
+    // Include common retail and inventory barcode types explicitly.
+    // The previous default configuration could fail to decode some 1D labels.
+    var barcodeFormats = [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.CODABAR,
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.DATA_MATRIX
+    ].filter(function(value) { return typeof value === 'number'; });
+
     try {
-      entryBarcodeScanner = new Html5Qrcode('entryBarcodeScanner');
-      entryBarcodeScanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 280, height: 140 }, aspectRatio: 1.7777778, rememberLastUsedCamera: true },
+      var scanner = new Html5Qrcode('entryBarcodeScanner', {
+        formatsToSupport: barcodeFormats,
+        verbose: false
+      });
+      entryBarcodeScanner = scanner;
+
+      // IMPORTANT: activate the callback BEFORE start() resolves.
+      // Some devices decode a frame while the start promise is still pending.
+      entryBarcodeScanActive = true;
+
+      scanner.start(
+        { facingMode: { ideal: 'environment' } },
+        {
+          fps: 15,
+          qrbox: function(viewWidth, viewHeight) {
+            // A wide scan area is important for EAN/UPC and other 1D barcodes.
+            return {
+              width: Math.max(120, Math.floor(Math.min(viewWidth * 0.95, 720))),
+              height: Math.max(90, Math.floor(Math.min(viewHeight * 0.65, 260)))
+            };
+          },
+          disableFlip: false
+        },
         function(decodedText) {
           if (!entryBarcodeScanActive || entryBarcodeHandling) return;
+
           var scanned = String(decodedText || '').trim();
           var scannedKey = normalizeBarcodeValue(scanned);
           if (!scannedKey) return;
 
-          // Compare against the BARCODE values now returned by getItemList().
-          // String normalization handles scanner-added spaces/control characters
-          // while preserving leading zeros and the original barcode characters.
+          // Match the decoded text to the BARCODE column from the Items sheet.
+          // Keep barcode values as strings so leading zeroes are not lost.
           var match = catalogItems.find(function(item) {
             return normalizeBarcodeValue(item && item.barcode) === scannedKey;
           });
 
           if (!match) {
             entryBarcodeHandling = true;
-            showEntryBarcodeMessage('Barcode "' + scanned + '" is not registered to an item. Register it first or scan another barcode.', false);
-            window.setTimeout(function() { entryBarcodeHandling = false; }, 1400);
+            showEntryBarcodeMessage(
+              'Barcode detected (' + scanned + '), but it is not registered to any item in the Items sheet. Register this barcode first, then scan again.',
+              false
+            );
+            window.setTimeout(function() { entryBarcodeHandling = false; }, 1800);
             return;
           }
 
           entryBarcodeHandling = true;
           pendingScannedCatalogItem = match;
           stopEntryBarcodeCamera();
+
           document.getElementById('entryQuantityItemName').textContent =
             match.name + (match.code ? ' | Code: ' + match.code : '');
           document.getElementById('entryScannedQuantity').value = '';
           document.getElementById('entryScannedExpiry').value = '';
           document.getElementById('entryQuantityModal').style.display = 'flex';
-          window.setTimeout(function() { document.getElementById('entryScannedQuantity').focus(); }, 100);
+          window.setTimeout(function() {
+            document.getElementById('entryScannedQuantity').focus();
+          }, 100);
           showEntryBarcodeMessage('Barcode detected: ' + scanned, true);
         },
-        function() {}
+        function(scanError) {
+          // A missed frame is normal. Keep scanning; do not stop the camera.
+        }
       ).then(function() {
         entryBarcodeStarting = false;
-        entryBarcodeScanActive = true;
+        // Do not reactivate the scanner if the user closed it during startup
+        // or a barcode was already decoded.
+        if (entryBarcodeScanner !== scanner || !entryBarcodeScanActive) return;
         button.disabled = false;
         button.textContent = '📷 CAMERA ACTIVE';
+        showEntryBarcodeMessage('Camera active. Hold the barcode steady inside the wide scan area.', true);
       }).catch(function(error) {
+        if (entryBarcodeScanner === scanner) entryBarcodeScanner = null;
         entryBarcodeStarting = false;
         entryBarcodeScanActive = false;
         button.disabled = false;
         button.textContent = '📷 OPEN CAMERA';
         wrap.style.display = 'none';
-        showEntryBarcodeMessage('Unable to start camera: ' + (error && error.message ? error.message : error), false);
-        entryBarcodeScanner = null;
+        showEntryBarcodeMessage(
+          'Unable to start camera: ' + (error && error.message ? error.message : error) +
+          '. Check camera permission and close other apps using the camera.',
+          false
+        );
+        try { scanner.clear(); } catch (clearError) {}
       });
     } catch (error) {
       entryBarcodeStarting = false;
