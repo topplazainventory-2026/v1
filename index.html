@@ -2489,6 +2489,17 @@
       .toLocaleLowerCase();
   }
 
+  // Barcode values must remain strings (never Number()), because leading
+  // zeros are meaningful. Remove scanner-added whitespace/control characters.
+  function normalizeBarcodeValue(value) {
+    return String(value == null ? '' : value)
+      .replace(/[\\u0000-\\u001F\\u007F]/g, '')
+      .replace(/\\u00a0/g, ' ')
+      .trim()
+      .replace(/\\s+/g, '')
+      .toLocaleLowerCase();
+  }
+
   function loadItems() {
     google.script.run
       .withSuccessHandler(function(items) {
@@ -2641,10 +2652,14 @@
         function(decodedText) {
           if (!entryBarcodeScanActive || entryBarcodeHandling) return;
           var scanned = String(decodedText || '').trim();
-          if (!scanned) return;
+          var scannedKey = normalizeBarcodeValue(scanned);
+          if (!scannedKey) return;
 
+          // Compare against the BARCODE values now returned by getItemList().
+          // String normalization handles scanner-added spaces/control characters
+          // while preserving leading zeros and the original barcode characters.
           var match = catalogItems.find(function(item) {
-            return String(item.barcode || '').trim().toLowerCase() === scanned.toLowerCase();
+            return normalizeBarcodeValue(item && item.barcode) === scannedKey;
           });
 
           if (!match) {
