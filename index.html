@@ -2951,6 +2951,32 @@
     saveBatchEntries(entries, status, requester, department);
   }
 
+  function clearSuccessfulBatchEntryForm() {
+    var tbody = document.getElementById('batchRows');
+    if (tbody) {
+      // Remove all submitted item names, quantities, codes, remaining balances,
+      // expiry dates, and row-specific item selections/datasets.
+      tbody.replaceChildren();
+      batchRowCounter = 0;
+      addBatchRows(10);
+    }
+
+    // Clear the requester fields as the previous successful-save behavior did.
+    var requesterField = document.getElementById('requesterName');
+    var departmentField = document.getElementById('departmentName');
+    if (requesterField) requesterField.value = '';
+    if (departmentField) departmentField.value = '';
+
+    // Remove any temporary barcode quantity selection left from the submitted form.
+    pendingScannedCatalogItem = null;
+    var quantityModal = document.getElementById('entryQuantityModal');
+    if (quantityModal) quantityModal.style.display = 'none';
+    var scannedQuantity = document.getElementById('entryScannedQuantity');
+    if (scannedQuantity) scannedQuantity.value = '';
+    var scannedExpiry = document.getElementById('entryScannedExpiry');
+    if (scannedExpiry) scannedExpiry.value = '';
+  }
+
   function saveBatchEntries(entries, status, requester, department) {
     batchSubmissionInProgress = true;
     google.script.run.withSuccessHandler(function(r) {
@@ -2968,11 +2994,11 @@
         };
       }
 
-      document.getElementById('requesterName').value = '';
-      document.getElementById('departmentName').value = '';
-      document.getElementById('batchRows').innerHTML = '';
-      batchRowCounter = 0;
-      addBatchRows(10);
+      // Clear the submitted item rows only after the server confirms a successful save.
+      // Keep the saved transaction in pendingStockOut above so the optional OUT
+      // action after Stock IN still has the original item names and quantities.
+      clearSuccessfulBatchEntryForm();
+
       // Refresh cached stock balances after either IN or OUT is recorded.
       loadItems();
 
