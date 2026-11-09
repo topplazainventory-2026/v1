@@ -2499,6 +2499,42 @@
       .replace(/\s+/g, '')
       .toLocaleLowerCase();
   }
+
+  // UPC-A is often decoded by a camera as EAN-13 with a leading zero,
+  // or the reverse. Compare only these well-defined equivalent forms;
+  // never convert a barcode to Number(), because leading zeroes matter.
+  function barcodeCandidateKeys(value) {
+    var raw = normalizeBarcodeValue(value);
+    if (!raw) return [];
+    var keys = [raw];
+
+    // Some decoders include an AIM symbology identifier such as ]C1.
+    var withoutAim = raw.replace(/^\][a-z][0-9]/i, '');
+    if (withoutAim && keys.indexOf(withoutAim) === -1) keys.push(withoutAim);
+
+    var digits = withoutAim.replace(/[^0-9]/g, '');
+    if (digits && digits === withoutAim) {
+      if (digits.length === 12 && digits.charAt(0) !== '0') {
+        keys.push('0' + digits); // UPC-A as EAN-13
+      } else if (digits.length === 13 && digits.charAt(0) === '0') {
+        keys.push(digits.substring(1)); // EAN-13 as UPC-A
+      }
+    }
+    return keys;
+  }
+
+  function findCatalogItemByBarcode(scannedValue) {
+    var wanted = barcodeCandidateKeys(scannedValue);
+    if (!wanted.length) return null;
+
+    for (var i = 0; i < catalogItems.length; i++) {
+      var stored = barcodeCandidateKeys(catalogItems[i] && catalogItems[i].barcode);
+      for (var a = 0; a < wanted.length; a++) {
+        if (stored.indexOf(wanted[a]) !== -1) return catalogItems[i];
+      }
+    }
+    return null;
+  }
   function loadItems() {
     google.script.run
       .withSuccessHandler(function(items) {
@@ -2640,7 +2676,21 @@
       return;
     }
     if (!Array.isArray(catalogItems) || !catalogItems.length) {
-      showEntryBarcodeMessage('The item catalog is still loading or is empty. Wait for the item list to load, then try again.', false);
+      showEntryBarcodeMessage('Loading the Items sheet before opening the scanner...', false);
+      google.script.run
+        .withSuccessHandler(function(items) {
+          catalogItems = Array.isArray(items) ? items : [];
+          if (!catalogItems.length) {
+            showEntryBarcodeMessage('No items were returned from the Items sheet. Check that the Items sheet has item rows and a BARCODE header in row 1.', false);
+            return;
+          }
+          startEntryBarcodeCamera();
+        })
+        .withFailureHandler(function(error) {
+          showEntryBarcodeMessage('Could not load barcode data from the Items sheet: ' +
+            (error && error.message ? error.message : error), false);
+        })
+        .getItemList();
       return;
     }
 
@@ -2681,15 +2731,18 @@
       scanner.start(
         { facingMode: { ideal: 'environment' } },
         {
-          fps: 15,
+          fps: 20,
+          // Use almost the full camera frame: narrow QR-style boxes can crop
+          // long EAN/UPC/Code-128 labels before the decoder sees the full code.
           qrbox: function(viewWidth, viewHeight) {
-            // A wide scan area is important for EAN/UPC and other 1D barcodes.
             return {
-              width: Math.max(120, Math.floor(Math.min(viewWidth * 0.95, 720))),
-              height: Math.max(90, Math.floor(Math.min(viewHeight * 0.65, 260)))
+              width: Math.max(1, Math.floor(viewWidth * 0.98)),
+              height: Math.max(1, Math.floor(viewHeight * 0.80))
             };
           },
-          disableFlip: false
+          aspectRatio: 1.7777778,
+          disableFlip: false,
+          rememberLastUsedCamera: true
         },
         function(decodedText) {
           if (!entryBarcodeScanActive || entryBarcodeHandling) return;
@@ -2700,9 +2753,7 @@
 
           // Match the decoded text to the BARCODE column from the Items sheet.
           // Keep barcode values as strings so leading zeroes are not lost.
-          var match = catalogItems.find(function(item) {
-            return normalizeBarcodeValue(item && item.barcode) === scannedKey;
-          });
+          var match = findCatalogItemByBarcode(scanned);
 
           if (!match) {
             entryBarcodeHandling = true;
@@ -2738,7 +2789,13 @@
         if (entryBarcodeScanner !== scanner || !entryBarcodeScanActive) return;
         button.disabled = false;
         button.textContent = '📷 CAMERA ACTIVE';
-        showEntryBarcodeMessage('Camera active. Hold the barcode steady inside the wide scan area.', true);
+        var registeredBarcodeCount = catalogItems.filter(function(it) {
+          return normalizeBarcodeValue(it && it.barcode) !== '';
+        }).length;
+        showEntryBarcodeMessage(
+          'Camera active. ' + registeredBarcodeCount + ' item barcode(s) loaded from Items. Hold the full barcode inside the scan area.',
+          registeredBarcodeCount > 0
+        );
       }).catch(function(error) {
         if (entryBarcodeScanner === scanner) entryBarcodeScanner = null;
         entryBarcodeStarting = false;
@@ -4262,14 +4319,37 @@
     barcodeScanActive = true;
 
     try {
-      barcodeScanner = new Html5Qrcode('barcodeScanner');
+      var registrationFormats = [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ].filter(function(value) { return typeof value === 'number'; });
+
+      barcodeScanner = new Html5Qrcode('barcodeScanner', {
+        formatsToSupport: registrationFormats,
+        verbose: false
+      });
       barcodeScanner.start(
-        { facingMode: 'environment' },
+        { facingMode: { ideal: 'environment' } },
         {
-          fps: 10,
-          qrbox: { width: 280, height: 140 },
+          fps: 20,
+          qrbox: function(viewWidth, viewHeight) {
+            return {
+              width: Math.max(1, Math.floor(viewWidth * 0.98)),
+              height: Math.max(1, Math.floor(viewHeight * 0.80))
+            };
+          },
           aspectRatio: 1.7777778,
-          rememberLastUsedCamera: true
+          rememberLastUsedCamera: true,
+          disableFlip: false
         },
         function(decodedText) {
           if (!barcodeScanActive) return;
@@ -4363,9 +4443,25 @@
         button.textContent = '✓ SAVED!';
         showBarcodeMessage(result.message || 'Barcode saved successfully.', true);
         // Refresh the item list used by the rest of the app.
-        google.script.run.withSuccessHandler(function(items) {
-          catalogItems = Array.isArray(items) ? items : [];
-        }).getItemList();
+        google.script.run
+          .withSuccessHandler(function(items) {
+            catalogItems = Array.isArray(items) ? items : [];
+            // Refresh entry-form item suggestions too, without requiring a page reload.
+            var itemList = document.getElementById('itemList');
+            if (itemList) {
+              itemList.innerHTML = '';
+              catalogItems.forEach(function(it) {
+                if (!it || !it.name) return;
+                var option = document.createElement('option');
+                option.value = String(it.name);
+                itemList.appendChild(option);
+              });
+            }
+          })
+          .withFailureHandler(function(error) {
+            console.warn('Barcode was saved, but the item catalog refresh failed:', error);
+          })
+          .getItemList();
         window.setTimeout(function() {
           resetBarcodeForm();
         }, 3000);
