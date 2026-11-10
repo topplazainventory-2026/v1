@@ -2953,28 +2953,40 @@
 
   function clearSuccessfulBatchEntryForm() {
     var tbody = document.getElementById('batchRows');
+
+    // Rebuild the entry table with 10 completely blank rows.
     if (tbody) {
-      // Remove all submitted item names, quantities, codes, remaining balances,
-      // expiry dates, and row-specific item selections/datasets.
-      tbody.replaceChildren();
+      tbody.innerHTML = '';
       batchRowCounter = 0;
       addBatchRows(10);
     }
 
-    // Clear the requester fields as the previous successful-save behavior did.
+    // Clear the requester and department fields.
     var requesterField = document.getElementById('requesterName');
     var departmentField = document.getElementById('departmentName');
     if (requesterField) requesterField.value = '';
     if (departmentField) departmentField.value = '';
 
-    // Remove any temporary barcode quantity selection left from the submitted form.
+    // Clear any temporary barcode quantity/expiration entry.
     pendingScannedCatalogItem = null;
     var quantityModal = document.getElementById('entryQuantityModal');
     if (quantityModal) quantityModal.style.display = 'none';
+
     var scannedQuantity = document.getElementById('entryScannedQuantity');
     if (scannedQuantity) scannedQuantity.value = '';
+
     var scannedExpiry = document.getElementById('entryScannedExpiry');
     if (scannedExpiry) scannedExpiry.value = '';
+
+    // Clear the Stock OUT reason field after a completed transaction.
+    var reasonField = document.getElementById('stockOutReasonText');
+    if (reasonField) reasonField.value = '';
+
+    // Reset any temporary scan handling state.
+    entryBarcodeHandling = false;
+
+    // Keep the success message visible so the user can see the save result.
+    if (requesterField) requesterField.focus();
   }
 
   function saveBatchEntries(entries, status, requester, department) {
