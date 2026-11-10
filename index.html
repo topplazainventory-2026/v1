@@ -2952,40 +2952,59 @@
   }
 
   function clearSuccessfulBatchEntryForm() {
+    // Stop the live camera before clearing. Otherwise it can decode the same
+    // barcode again immediately and refill the first empty row.
+    stopEntryBarcodeCamera();
+
     var tbody = document.getElementById('batchRows');
 
-    // Rebuild the entry table with 10 completely blank rows.
+    // Clear every existing entry control and its stored item reference first.
     if (tbody) {
+      Array.from(tbody.querySelectorAll('.batchRow')).forEach(function(row) {
+        var itemField = row.querySelector('.batchItem');
+        var codeField = row.querySelector('.entryCode');
+        var remainingField = row.querySelector('.entryRemaining');
+        var quantityField = row.querySelector('.batchQty');
+        var expiryField = row.querySelector('.batchExpiry');
+        if (itemField) itemField.value = '';
+        if (codeField) codeField.value = '';
+        if (remainingField) remainingField.value = '—';
+        if (quantityField) quantityField.value = '';
+        if (expiryField) expiryField.value = '';
+        delete row.dataset.itemName;
+      });
+
+      // Rebuild with exactly 10 blank rows to remove any extra scanned rows.
       tbody.innerHTML = '';
       batchRowCounter = 0;
       addBatchRows(10);
     }
 
-    // Clear the requester and department fields.
+    // Clear requester and department.
     var requesterField = document.getElementById('requesterName');
     var departmentField = document.getElementById('departmentName');
     if (requesterField) requesterField.value = '';
     if (departmentField) departmentField.value = '';
 
-    // Clear any temporary barcode quantity/expiration entry.
+    // Close and clear barcode quantity entry.
     pendingScannedCatalogItem = null;
     var quantityModal = document.getElementById('entryQuantityModal');
     if (quantityModal) quantityModal.style.display = 'none';
-
     var scannedQuantity = document.getElementById('entryScannedQuantity');
     if (scannedQuantity) scannedQuantity.value = '';
-
     var scannedExpiry = document.getElementById('entryScannedExpiry');
     if (scannedExpiry) scannedExpiry.value = '';
 
-    // Clear the Stock OUT reason field after a completed transaction.
+    // Clear Stock OUT reason and barcode status text.
     var reasonField = document.getElementById('stockOutReasonText');
     if (reasonField) reasonField.value = '';
+    var barcodeMessage = document.getElementById('entryBarcodeMessage');
+    if (barcodeMessage) {
+      barcodeMessage.textContent = '';
+      barcodeMessage.style.display = 'none';
+    }
 
-    // Reset any temporary scan handling state.
     entryBarcodeHandling = false;
-
-    // Keep the success message visible so the user can see the save result.
     if (requesterField) requesterField.focus();
   }
 
