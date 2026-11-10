@@ -1667,10 +1667,7 @@
         <button type="button" class="btn btnOut" id="stockOutButton" onclick="submitBatch('OUT')">➖ STOCK OUT ALL</button>
       </div>
       <div id="entrySaveIndicator" role="status" aria-live="polite" style="display:none;margin:12px 0 4px;padding:10px 12px;border-radius:8px;font-weight:700;font-size:14px;"></div>
-      <div
-        id="entryMessage"
-        class="message"
-      ></div>
+      <div id="entryMessage" class="message"></div>
 
     </div>
 
@@ -2063,10 +2060,10 @@
 <div id="stockOutConfirmModal" class="stockOutModal" style="display:none;">
   <div class="stockOutModalCard" role="dialog" aria-modal="true" aria-labelledby="stockOutModalTitle">
     <h2 id="stockOutModalTitle">Stock IN Saved Successfully</h2>
-    <p>The items and quantities you just saved are ready. Would you like to record these same items as Stock OUT now?</p>
+    <p>Stock IN has already been saved. Should the same items and quantities also be recorded as Stock OUT (released), or should this remain a Stock IN record only?</p>
     <div class="stockOutModalActions">
-      <button type="button" class="btn btnOut" onclick="proceedWithStockOut()">➖ PROCEED TO STOCK OUT</button>
-      <button type="button" class="btn btnGenerate" onclick="closeStockOutPrompt()">NOT NOW</button>
+      <button type="button" class="btn btnOut" onclick="proceedWithStockOut()">➖ YES — PROCEED TO STOCK OUT</button>
+      <button type="button" class="btn btnGenerate" onclick="closeStockOutPrompt()">NO — STOCK IN ONLY</button>
     </div>
   </div>
 </div>
@@ -2904,8 +2901,7 @@
 
   function submitBatch(status) {
     if (batchSubmissionInProgress) return;
-    var indicator = document.getElementById('entrySaveIndicator');
-    if (indicator) indicator.style.display = 'none';
+    resetEntrySaveIndicator();
 
     var requester = document.getElementById('requesterName').value.trim();
     var department = document.getElementById('departmentName').value.trim();
@@ -2959,39 +2955,36 @@
   }
 
   function clearSuccessfulBatchEntryForm() {
-    var tbody = document.getElementById('batchRows');
-    if (tbody) {
-      // Remove all submitted item names, quantities, codes, remaining balances,
-      // expiry dates, and row-specific item selections/datasets.
-      tbody.replaceChildren();
-      batchRowCounter = 0;
-      addBatchRows(10);
-    }
-
-    // Clear the requester fields as the previous successful-save behavior did.
-    var requesterField = document.getElementById('requesterName');
-    var departmentField = document.getElementById('departmentName');
-    if (requesterField) {
-      requesterField.value = '';
-      requesterField.removeAttribute('value');
-    }
-    if (departmentField) {
-      departmentField.value = '';
-      departmentField.removeAttribute('value');
-    }
-
-    // Remove any temporary barcode quantity selection left from the submitted form.
+    // Stop the camera first so a delayed scan cannot repopulate the cleared form.
     pendingScannedCatalogItem = null;
     entryBarcodeHandling = false;
     entryBarcodePauseAfterSave = true;
-    // Stop scanning before clearing the form so a delayed scan cannot refill it.
-    stopEntryBarcodeCamera();
+    try { stopEntryBarcodeCamera(); } catch (e) {}
+
     var quantityModal = document.getElementById('entryQuantityModal');
     if (quantityModal) quantityModal.style.display = 'none';
     var scannedQuantity = document.getElementById('entryScannedQuantity');
     if (scannedQuantity) scannedQuantity.value = '';
     var scannedExpiry = document.getElementById('entryScannedExpiry');
     if (scannedExpiry) scannedExpiry.value = '';
+
+    // Recreate the standard blank rows so item/code/quantity/expiry values and
+    // row datasets are all removed, not merely visually hidden.
+    var tbody = document.getElementById('batchRows');
+    if (tbody) {
+      tbody.innerHTML = '';
+      batchRowCounter = 0;
+      addBatchRows(10);
+    }
+
+    ['requesterName', 'departmentName', 'stockOutReasonText'].forEach(function(id) {
+      var field = document.getElementById(id);
+      if (field) field.value = '';
+    });
+
+    var reasonModal = document.getElementById('stockOutReasonModal');
+    if (reasonModal) reasonModal.style.display = 'none';
+    pendingReasonSubmission = null;
   }
 
   function setEntrySaveIndicator(message, state) {
@@ -3004,52 +2997,85 @@
     indicator.style.border = '1px solid ' + (state === 'success' ? '#86efac' : (state === 'error' ? '#fca5a5' : '#93c5fd'));
   }
 
+  function setBatchButtonState(status, state) {
+    var inButton = document.getElementById('stockInButton');
+    var outButton = document.getElementById('stockOutButton');
+    if (inButton) {
+      inButton.disabled = state === 'saving';
+      inButton.textContent = state === 'saved' && status === 'IN' ? '✓ STOCK IN SAVED' : '➕ STOCK IN ALL';
+    }
+    if (outButton) {
+      outButton.disabled = state === 'saving';
+      outButton.textContent = state === 'saved' && status === 'OUT' ? '✓ STOCK OUT SAVED' : '➖ STOCK OUT ALL';
+    }
+  }
+
+  function resetEntrySaveIndicator() {
+    var indicator = document.getElementById('entrySaveIndicator');
+    if (indicator) {
+      indicator.textContent = '';
+      indicator.style.display = 'none';
+    }
+    setBatchButtonState('', 'idle');
+  }
+
   function saveBatchEntries(entries, status, requester, department) {
     if (batchSubmissionInProgress) return;
     batchSubmissionInProgress = true;
-    var inButton = document.getElementById('stockInButton');
-    var outButton = document.getElementById('stockOutButton');
-    if (inButton) inButton.disabled = true;
-    if (outButton) outButton.disabled = true;
-    setEntrySaveIndicator(status === 'IN' ? '⏳ Saving Stock IN entry...' : '⏳ Saving Stock OUT entry...', 'saving');
+    setBatchButtonState(status, 'saving');
+    setEntrySaveIndicator(status === 'IN' ? '⏳ SAVING STOCK IN...' : '⏳ SAVING STOCK OUT...', 'saving');
 
     google.script.run.withSuccessHandler(function(r) {
       batchSubmissionInProgress = false;
-      if (inButton) inButton.disabled = false;
-      if (outButton) outButton.disabled = false;
 
-      // Keep the original transaction details for the optional follow-up OUT.
+      // Keep the exact submitted transaction in memory for the optional OUT step.
+      // Choosing STOCK IN ONLY in the popup will discard this pending copy.
       if (status === 'IN') {
         pendingStockOut = {
           entries: entries.map(function(entry) {
-            return {item: entry.item, quantity: entry.quantity, expirationDate: entry.expirationDate || '', reason: entry.reason || ''};
+            return {
+              item: entry.item,
+              quantity: entry.quantity,
+              expirationDate: entry.expirationDate || '',
+              reason: entry.reason || ''
+            };
           }),
           requester: requester,
           department: department
         };
       }
 
-      // Clear all entry fields only after Apps Script confirms the save.
+      // Clear the form only after the Apps Script backend confirms the save.
       clearSuccessfulBatchEntryForm();
-      var savedCount = r && Number.isFinite(Number(r.savedCount)) ? Number(r.savedCount) : entries.length;
-      var successText = (status === 'IN' ? '✓ STOCK IN SAVED SUCCESSFULLY' : '✓ STOCK OUT SAVED SUCCESSFULLY') + ' — ' + savedCount + ' item(s) saved.';
-      setEntrySaveIndicator(successText, 'success');
-      showMessage((r && r.message ? r.message : 'Entry saved successfully.') + ' Items saved: ' + savedCount + '.', true);
+      setBatchButtonState(status, 'saved');
 
-      // Refresh cached stock balances after either IN or OUT is recorded.
+      var savedCount = r && Number.isFinite(Number(r.savedCount))
+        ? Number(r.savedCount)
+        : entries.length;
+      var successText = status === 'IN'
+        ? '✓ STOCK IN SAVED SUCCESSFULLY'
+        : '✓ STOCK OUT SAVED SUCCESSFULLY';
+      setEntrySaveIndicator(successText + ' — ' + savedCount + ' item(s) saved.', 'success');
+      showMessage((r && r.message ? r.message : 'Entry saved successfully.') +
+        ' Items saved: ' + savedCount + '.', true);
+
+      // Refresh available balances after either transaction type.
       loadItems();
 
+      // Stock OUT is never automatic. The user must explicitly choose it.
       if (status === 'IN') {
         var prompt = document.getElementById('stockOutConfirmModal');
         if (prompt) prompt.style.display = 'flex';
+      } else {
+        pendingStockOut = null;
       }
     }).withFailureHandler(function(e) {
       batchSubmissionInProgress = false;
-      if (inButton) inButton.disabled = false;
-      if (outButton) outButton.disabled = false;
+      setBatchButtonState('', 'idle');
       var errorText = e && e.message ? e.message : String(e || 'Unknown save error.');
-      setEntrySaveIndicator('✕ ENTRY NOT SAVED — ' + errorText, 'error');
+      setEntrySaveIndicator('✕ NOT SAVED — ' + errorText, 'error');
       showMessage(errorText, false);
+      // Keep all entered fields intact when the save fails.
     }).saveEntries(entries, status, requester, department);
   }
 
@@ -3104,6 +3130,7 @@
   function closeStockOutPrompt() {
     var modal = document.getElementById('stockOutConfirmModal');
     if (modal) modal.style.display = 'none';
+    // "NO — STOCK IN ONLY" means do not create a matching Stock OUT record.
     pendingStockOut = null;
   }
 
