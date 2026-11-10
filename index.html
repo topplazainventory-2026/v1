@@ -2533,33 +2533,77 @@
     }
     return null;
   }
-  function loadItems() {
+  var itemCatalogRefreshInProgress = false;
+  var itemCatalogRefreshTimerStarted = false;
+
+  function updateItemSuggestionLists(items) {
+    var listIds = ['itemList', 'barcodeItemSuggestions', 'expiryItemOptions'];
+    listIds.forEach(function(id) {
+      var list = document.getElementById(id);
+      if (!list) return;
+      list.innerHTML = '';
+      items.forEach(function(item) {
+        if (!item || !item.name) return;
+        var option = document.createElement('option');
+        option.value = String(item.name);
+        list.appendChild(option);
+        // Barcode registration also supports searching by item code.
+        if (id === 'barcodeItemSuggestions' && item.code) {
+          var codeOption = document.createElement('option');
+          codeOption.value = String(item.code);
+          list.appendChild(codeOption);
+        }
+      });
+    });
+  }
+
+  function refreshItemCatalog(showErrors) {
+    if (itemCatalogRefreshInProgress) return;
+    itemCatalogRefreshInProgress = true;
+
     google.script.run
       .withSuccessHandler(function(items) {
-        catalogItems = Array.isArray(items) ? items : [];
-        var dl = document.getElementById('itemList');
-        dl.innerHTML = '';
-
-        catalogItems.forEach(function(item) {
-          if (!item || !item.name) return;
-          var opt = document.createElement('option');
-          opt.value = String(item.name);
-          dl.appendChild(opt);
-        });
+        itemCatalogRefreshInProgress = false;
+        var freshItems = Array.isArray(items) ? items : [];
+        var oldSnapshot = JSON.stringify(catalogItems || []);
+        var newSnapshot = JSON.stringify(freshItems);
+        if (oldSnapshot !== newSnapshot) {
+          catalogItems = freshItems;
+          updateItemSuggestionLists(catalogItems);
+        }
 
         if (!batchRowsInitialized) {
           addBatchRows(10);
           batchRowsInitialized = true;
         }
 
-        if (!catalogItems.length) {
+        if (!catalogItems.length && showErrors) {
           showMessage('No items were returned from the Items sheet. Please check the catalog sheet and its data.', false);
         }
       })
       .withFailureHandler(function(error) {
-        showMessage('Could not load the item catalog: ' + (error.message || error), false);
+        itemCatalogRefreshInProgress = false;
+        if (showErrors) {
+          showMessage('Could not load the item catalog: ' +
+            (error && error.message ? error.message : error), false);
+        } else {
+          console.warn('Automatic Items sheet refresh failed:', error);
+        }
       })
       .getItemList();
+  }
+
+  function loadItems() {
+    // Initial load, followed by silent refreshes so direct Google Sheets
+    // additions/edits become searchable without reloading this page.
+    refreshItemCatalog(true);
+
+    if (!itemCatalogRefreshTimerStarted) {
+      itemCatalogRefreshTimerStarted = true;
+      window.setInterval(function() {
+        refreshItemCatalog(false);
+      }, 15000);
+    }
   }
 
   function addBatchRows(count) {
