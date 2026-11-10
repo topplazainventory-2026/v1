@@ -1663,9 +1663,10 @@
       <label for="departmentName">Department</label>
       <input id="departmentName" type="text" placeholder="Enter department" required>
       <div class="buttons">
-        <button class="btn btnIn" onclick="submitBatch('IN')">➕ STOCK IN ALL</button>
-        <button class="btn btnOut" onclick="submitBatch('OUT')">➖ STOCK OUT ALL</button>
+        <button type="button" class="btn btnIn" id="stockInButton" onclick="submitBatch('IN')">➕ STOCK IN ALL</button>
+        <button type="button" class="btn btnOut" id="stockOutButton" onclick="submitBatch('OUT')">➖ STOCK OUT ALL</button>
       </div>
+      <div id="entrySaveIndicator" role="status" aria-live="polite" style="display:none;margin:12px 0 4px;padding:10px 12px;border-radius:8px;font-weight:700;font-size:14px;"></div>
       <div
         id="entryMessage"
         class="message"
@@ -2903,6 +2904,8 @@
 
   function submitBatch(status) {
     if (batchSubmissionInProgress) return;
+    var indicator = document.getElementById('entrySaveIndicator');
+    if (indicator) indicator.style.display = 'none';
 
     var requester = document.getElementById('requesterName').value.trim();
     var department = document.getElementById('departmentName').value.trim();
@@ -2991,11 +2994,29 @@
     if (scannedExpiry) scannedExpiry.value = '';
   }
 
+  function setEntrySaveIndicator(message, state) {
+    var indicator = document.getElementById('entrySaveIndicator');
+    if (!indicator) return;
+    indicator.textContent = message;
+    indicator.style.display = 'block';
+    indicator.style.color = state === 'success' ? '#166534' : (state === 'error' ? '#b91c1c' : '#1d4ed8');
+    indicator.style.background = state === 'success' ? '#dcfce7' : (state === 'error' ? '#fee2e2' : '#dbeafe');
+    indicator.style.border = '1px solid ' + (state === 'success' ? '#86efac' : (state === 'error' ? '#fca5a5' : '#93c5fd'));
+  }
+
   function saveBatchEntries(entries, status, requester, department) {
+    if (batchSubmissionInProgress) return;
     batchSubmissionInProgress = true;
+    var inButton = document.getElementById('stockInButton');
+    var outButton = document.getElementById('stockOutButton');
+    if (inButton) inButton.disabled = true;
+    if (outButton) outButton.disabled = true;
+    setEntrySaveIndicator(status === 'IN' ? '⏳ Saving Stock IN entry...' : '⏳ Saving Stock OUT entry...', 'saving');
+
     google.script.run.withSuccessHandler(function(r) {
       batchSubmissionInProgress = false;
-      showMessage(r.message + ' Items saved: ' + r.savedCount + '.', true);
+      if (inButton) inButton.disabled = false;
+      if (outButton) outButton.disabled = false;
 
       // Keep the original transaction details for the optional follow-up OUT.
       if (status === 'IN') {
@@ -3008,20 +3029,27 @@
         };
       }
 
-      // Clear the submitted item rows only after the server confirms a successful save.
-      // Keep the saved transaction in pendingStockOut above so the optional OUT
-      // action after Stock IN still has the original item names and quantities.
+      // Clear all entry fields only after Apps Script confirms the save.
       clearSuccessfulBatchEntryForm();
+      var savedCount = r && Number.isFinite(Number(r.savedCount)) ? Number(r.savedCount) : entries.length;
+      var successText = (status === 'IN' ? '✓ STOCK IN SAVED SUCCESSFULLY' : '✓ STOCK OUT SAVED SUCCESSFULLY') + ' — ' + savedCount + ' item(s) saved.';
+      setEntrySaveIndicator(successText, 'success');
+      showMessage((r && r.message ? r.message : 'Entry saved successfully.') + ' Items saved: ' + savedCount + '.', true);
 
       // Refresh cached stock balances after either IN or OUT is recorded.
       loadItems();
 
       if (status === 'IN') {
-        document.getElementById('stockOutConfirmModal').style.display = 'flex';
+        var prompt = document.getElementById('stockOutConfirmModal');
+        if (prompt) prompt.style.display = 'flex';
       }
     }).withFailureHandler(function(e) {
       batchSubmissionInProgress = false;
-      showMessage(e.message || e, false);
+      if (inButton) inButton.disabled = false;
+      if (outButton) outButton.disabled = false;
+      var errorText = e && e.message ? e.message : String(e || 'Unknown save error.');
+      setEntrySaveIndicator('✕ ENTRY NOT SAVED — ' + errorText, 'error');
+      showMessage(errorText, false);
     }).saveEntries(entries, status, requester, department);
   }
 
